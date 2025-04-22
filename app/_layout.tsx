@@ -1,13 +1,35 @@
-import React from "react";
-import { Stack } from "expo-router";
+import { Stack } from 'expo-router';
 
-const _layout = () => {
+export default function Layout() {
     return (
-        <Stack>
-            <Stack.Screen name="home" options={{ headerShown: false }} />
-        </Stack>
+    <Stack
+        screenOptions={{
+        headerShown: true,
+        gestureEnabled: true,
+        gestureDirection: 'horizontal',
+        animation: 'slide_from_left', // Default animation for forward navigation
+        presentation: 'card',
+        }}
+    >
+        <Stack.Screen
+        name="home"
+        options={{
+            title: 'Home',
+            headerShown: false,
+        }}
+        />
+        <Stack.Screen
+        name="settings"
+        options={({ route }) => ({
+            title: 'Settings',
+            headerShown: false,
+            animation: 'slide_from_right', // This will make the screen slide from left when going back
+            // For more control, we can use the custom animation options
+            animationDuration: 600,
+        })}
+        />
+    </Stack>
     );
-};
+}
 
-export default _layout;
 

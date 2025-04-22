@@ -4,38 +4,40 @@ import {
     View,
     Text,
     StyleSheet,
-    TouchableOpacity
+    Pressable
 } from "react-native";
+import globalStyles from './styles/globalStyles';
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Fontisto from "@expo/vector-icons/Fontisto";
 import { Card, Title, Paragraph } from "react-native-paper";
 import { useState } from "react";
+import { router } from 'expo-router';
 
 
 export default function HomeScreen() {
     const [newAlarmButtonPressed, setNewAlarmButtonPressed] = useState<boolean>(false);
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <ScrollView style={styles.scrollView}>
-                <View style={styles.subHeaderBar}>
-                    <Text style={styles.subHeaderText}>Alarm</Text>
-                    <TouchableOpacity>
+        <SafeAreaView style={globalStyles.safeArea}>
+            <ScrollView style={globalStyles.scrollView}>
+                <View style={globalStyles.subHeaderBar}>
+                    <Text style={globalStyles.subHeaderText}>Alarm</Text>
+                    <Pressable onPress={() => router.push('/settings')}>
                         <Ionicons 
                             name="menu-outline"
                             size={32}
                             color="black"
                             marginTop={-4}
                         />
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
                 <CardComponent />
             </ScrollView>
-            <TouchableOpacity 
+            <Pressable 
                 onPressIn={() => setNewAlarmButtonPressed(true)}
                 onPressOut={() => setNewAlarmButtonPressed(false)}
                 style={[styles.addAlarmButton, newAlarmButtonPressed && styles.buttonPressed]}>
                 <Ionicons name="add-circle" size={70} color="black" />
-            </TouchableOpacity>
+            </Pressable>
         </SafeAreaView>
     )
 }
@@ -73,27 +75,6 @@ const CardComponent = () => {
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: "#F3F3F3",
-    },
-    scrollView: {
-        paddingVertical: 45,
-        paddingHorizontal: 20,
-        backgroundColor: "#F3F3F3",
-    },
-    subHeaderBar: {
-        display: "flex",
-        flexDirection: "row",
-        justifyContent: "space-between",
-        marginHorizontal: 5,
-        paddingBottom: 30,
-    },
-    subHeaderText: {
-        fontSize: 35,
-        marginTop: -11,
-        fontWeight: "700",
-    },
     card: {
         marginHorizontal: 8,
         marginVertical: 8,
@@ -131,3 +112,7 @@ const styles = StyleSheet.create({
         transform: [{ scale: 0.9 }],
     },
 })
+
+
+
+
