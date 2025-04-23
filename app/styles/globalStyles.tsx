@@ -4,6 +4,7 @@ const globalStyles = StyleSheet.create({
     safeArea: {
         flex: 1,
         backgroundColor: "#F3F3F3",
+        
     },
     scrollView: {
         paddingVertical: 45,

@@ -35,6 +35,7 @@ export default function HomeScreen() {
             <Pressable 
                 onPressIn={() => setNewAlarmButtonPressed(true)}
                 onPressOut={() => setNewAlarmButtonPressed(false)}
+                onPress={() => router.push('/newAlarm')}
                 style={[styles.addAlarmButton, newAlarmButtonPressed && styles.buttonPressed]}>
                 <Ionicons name="add-circle" size={70} color="black" />
             </Pressable>
