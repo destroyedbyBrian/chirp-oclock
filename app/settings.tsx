@@ -25,10 +25,10 @@ export default function SettingsScreen() {
                             name="return-up-back"
                             size={28}
                             color="black"
-                            style={{ paddingRight: 15, marginTop: -8 }}
+                            style={{ paddingRight: 15, marginTop: -7 }}
                         />
                     </Pressable>
-                    <Text style={[globalStyles.subHeaderText, {fontSize: 28}]}>Settings</Text>
+                    <Text style={[globalStyles.subHeaderText, {fontSize: 30}]}>Settings</Text>
                 </View>
                 <View style={styles.wrapperCountainer}>
                     <Text style={{ fontWeight: "bold", fontSize: 16 }}>

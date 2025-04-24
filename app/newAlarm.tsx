@@ -5,7 +5,6 @@ import {
     StyleSheet,
     Pressable,
     TouchableOpacity,
-    Alert,
     Modal
 } from "react-native";
 import globalStyles from "./styles/globalStyles";
@@ -18,6 +17,7 @@ import { Card, Title, Paragraph } from "react-native-paper";
 import { HourPicker, MinutePicker } from "../components/timePicker";
 import AmPm from "../components/ampmPicker";
 import { useState } from "react";
+import { router } from "expo-router";
 
 
 export default function NewAlarmScreen() {
@@ -29,15 +29,19 @@ export default function NewAlarmScreen() {
         <SafeAreaView style={globalStyles.safeArea}>
             <View style={globalStyles.scrollView}>
                 <View style={[globalStyles.subHeaderBar, {flexDirection: "row", alignItems: "center"}]}>
-                    <Feather
+                    <Feather 
                         name="x"
                         size={24}
                         color="black"
                         style={styles.cancelButton}
+                        onPress={() => router.back()}
                     />
                     <Text style={[globalStyles.subHeaderText, {fontSize: 24, marginLeft: 24}]}>New Alarm</Text>
                     <Pressable>
-                        <Text style={styles.saveButton}>Done</Text>
+                        <Text 
+                            style={styles.saveButton}
+                            onPress={() => router.push('/home')}
+                        >Done</Text>
                     </Pressable>
                 </View>
                 <Text style={styles.subHeader2}>Ring in 7hours: 24 minutes</Text>

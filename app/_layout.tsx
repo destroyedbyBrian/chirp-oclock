@@ -25,7 +25,7 @@ export default function Layout() {
                 headerShown: false,
                 animation: 'slide_from_right', // This will make the screen slide from left when going back
                 // For more control, we can use the custom animation options
-                animationDuration: 600,
+                animationDuration: 1000,
             })}
         />
         <Stack.Screen 
@@ -33,7 +33,7 @@ export default function Layout() {
             options={({ route }) => ({
                 title: 'New Alarm',
                 headerShown: false,
-                animation: 'slide_from_right',
+                animation: 'simple_push',
                 animationDuration: 600,
             })}
         />
