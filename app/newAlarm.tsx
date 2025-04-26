@@ -5,7 +5,9 @@ import {
     StyleSheet,
     Pressable,
     TouchableOpacity,
-    Modal
+    Modal,
+    Animated,
+    Easing
 } from "react-native";
 import globalStyles from "./styles/globalStyles";
 import Feather from "@expo/vector-icons/Feather";
@@ -16,14 +18,89 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Card, Title, Paragraph } from "react-native-paper";
 import { HourPicker, MinutePicker } from "../components/timePicker";
 import AmPm from "../components/ampmPicker";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { router } from "expo-router";
+import Svg, { Path } from 'react-native-svg';
+import { useNewAlarmStore } from '../stores/newAlarmStore';
+import { useAlarmsStore } from '../stores/alarmsStore';
 
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
+function AnimatedCheckmark({ size = 40, color = '#2ecc71', duration = 500 }) {
+    const animation = useRef(new Animated.Value(0)).current;
+  
+    // This path draws a standard check mark
+    const CHECK_MARK_PATH = 'M10 20 L18 28 L30 12';
+    // Length is estimated; for perfect match you can use Path measurement tools
+    const PATH_LENGTH = 30;
+  
+    useEffect(() => {
+      Animated.timing(animation, {
+        toValue: 1,
+        duration,
+        useNativeDriver: true,
+        easing: Easing.ease,
+      }).start();
+    }, []);
+  
+    return (
+      <View>
+        <Svg width={size} height={size} viewBox="0 0 40 40">
+          <AnimatedPath
+            d={CHECK_MARK_PATH}
+            stroke={color}
+            strokeWidth={4}
+            strokeLinecap="round"
+            fill="none"
+            strokeDasharray={PATH_LENGTH}
+            strokeDashoffset={animation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [PATH_LENGTH, 0],
+            })}
+          />
+        </Svg>
+      </View>
+    );
+  }
 
 export default function NewAlarmScreen() {
     const [modalVisible, setModalVisible] = useState<boolean>(false);
+    const [linkSuccessful, setLinkSuccessful] = useState<boolean>(false);
+
+    const hour = useNewAlarmStore((s) => s.hour);
+    const minute = useNewAlarmStore((s) => s.minute);
+    const ampm = useNewAlarmStore((s) => s.ampm);
+
+    const setHour = useNewAlarmStore((s) => s.setHour);
+    const setMinute = useNewAlarmStore((s) => s.setMinute);
+    const setAmpm = useNewAlarmStore((s) => s.setAmpm);
 
     const handleNFCScan = () => setModalVisible(true);
+
+    const addAlarm = useAlarmsStore((s) => s.addAlarm);
+
+    const handleDone = () => {
+        addAlarm({
+          id: Date.now().toString(), // simple unique id
+          hour: hour,
+          minute: minute,
+          ampm: ampm,
+          });
+        router.push('/home');
+      };
+
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (modalVisible) {
+            setLinkSuccessful(false);
+            timer = setTimeout(() => {
+                setLinkSuccessful(true);
+            }, 3000);
+        }
+        return () => clearTimeout(timer);
+    }, [modalVisible]);
+
 
     return (
         <SafeAreaView style={globalStyles.safeArea}>
@@ -34,23 +111,27 @@ export default function NewAlarmScreen() {
                         size={24}
                         color="black"
                         style={styles.cancelButton}
-                        onPress={() => router.back()}
+                        // onPress={() => router.back()}
+                        onPress={() => router.push('/home')}
                     />
                     <Text style={[globalStyles.subHeaderText, {fontSize: 24, marginLeft: 24}]}>New Alarm</Text>
                     <Pressable>
                         <Text 
                             style={styles.saveButton}
-                            onPress={() => router.push('/home')}
+                            onPress={() => {
+                                handleDone()
+                                router.push('/home')
+                            }}
                         >Done</Text>
                     </Pressable>
                 </View>
                 <Text style={styles.subHeader2}>Ring in 7hours: 24 minutes</Text>
                 <Card style={styles.cardContainer1}>
                     <Card.Content style={styles.cardContent1}>
-                        <HourPicker onHourChange={() => {}} />
+                        <HourPicker onHourChange={setHour} />
                         <Text style={styles.semiCollen}>:</Text>
-                        <MinutePicker onMinuteChange={() => {}} />
-                        <AmPm />
+                        <MinutePicker onMinuteChange={setMinute} />
+                        <AmPm onAmpmChange={setAmpm} />
                     </Card.Content>
                 </Card>
                 <Card style={styles.cardContainer2}>
@@ -122,38 +203,62 @@ export default function NewAlarmScreen() {
                         <Card style={styles.modalCard}>
                             <Card.Content>
                                 <View style={styles.modalContent}>
-                                    <Title
-                                        style={{
-                                            fontWeight: "bold",
-                                            paddingTop: 4,
-                                        }}
-                                    >Ready to Scan</Title>
-                                    <View style={styles.iconWrapper}>
-                                        <Entypo
-                                            name="circle"
-                                            size={100}
-                                            color="black"
-                                        />
-                                        <View style={styles.iconContainer}>
-                                            <Ionicons
-                                                name="phone-portrait-outline"
-                                                size={100}
-                                                color="black"
-                                            />
-                                        </View>
-                                    </View>
-                                    <Text style={{fontSize: 16}}>Approach an NFC tag</Text>
-                                    <TouchableOpacity
-                                        style={styles.cancelNFCScan}
-                                        onPress={() => setModalVisible(false)}
-                                    >
-                                        <Text
-                                            style={{
-                                                fontWeight: "bold",
-                                                fontSize: 18,
-                                            }}
-                                        >Cancel</Text>
-                                    </TouchableOpacity>
+                                    {linkSuccessful ? (
+                                        <>
+                                            <View style={{alignItems: 'center', justifyContent: 'center'}}>
+                                                <Text style={{fontWeight: "bold", fontSize: 22, marginBottom: 20, paddingTop: 4,}}>Link Successful</Text>
+                                                <View style={styles.iconWrapper}>
+                                                    <Entypo
+                                                            name="circle"
+                                                            size={100}
+                                                            color="black"
+                                                        />
+                                                        <View style={styles.iconContainer}>
+                                                            <AnimatedCheckmark size={90} color="black"/>
+                                                        </View>
+                                                </View>
+                                            </View>
+                                            <TouchableOpacity
+                                                style={styles.closeNFCModal}
+                                                onPress={() => setModalVisible(false)}
+                                            >
+                                                <Text style={{ fontWeight: "bold", fontSize: 18 }}>
+                                                    {linkSuccessful ? "Close" : "Cancel"}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Title
+                                                style={{
+                                                    fontWeight: "bold",
+                                                    paddingTop: 4,
+                                                }}>Ready to Scan</Title>
+                                            <View style={styles.iconWrapper}>
+                                                <Entypo
+                                                    name="circle"
+                                                    size={100}
+                                                    color="black"
+                                                />
+                                                <View style={styles.iconContainer}>
+                                                    <Ionicons
+                                                        name="phone-portrait-outline"
+                                                        size={100}
+                                                        color="black"
+                                                    />
+                                                </View>
+                                            </View>
+                                            <Text style={{fontSize: 16, fontWeight: "500"}}>Approach an NFC tag</Text>
+                                            <TouchableOpacity
+                                                style={styles.closeNFCModal}
+                                                onPress={() => setModalVisible(false)}
+                                            >
+                                                <Text style={{ fontWeight: "bold", fontSize: 18 }}>
+                                                    {linkSuccessful ? "Close" : "Cancel"}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </>
+                                    )}
                                 </View>
                             </Card.Content>
                         </Card>
@@ -244,7 +349,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
     },
-    cancelNFCScan: {
+    closeNFCModal: {
         backgroundColor: "#F3F3F3",
         padding: 14,
         borderRadius: 10,

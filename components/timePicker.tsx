@@ -1,42 +1,43 @@
 import { Dimensions, View, Text, ScrollView, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import moment from "moment-timezone";
 import { useState, useRef } from "react";
+import { useNewAlarmStore } from '../stores/newAlarmStore';
 
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 const CARD_HEIGHT = 250;
-const ITEM_HEIGHT = SCREEN_HEIGHT / 17; // Adjust based on your design
-const VISIBLE_ITEMS = 5; // How many numbers you want visible at once
+const ITEM_HEIGHT = SCREEN_HEIGHT / 17;
+const VISIBLE_ITEMS = 5; 
 
 type HourPickerProps = {
     onHourChange: (hour: number) => void;
 };
 
-const HourPicker: React.FC<HourPickerProps> = ({ onHourChange }) => {
+const HourPicker: React.FC<HourPickerProps> = () => {
     const numbers = Array.from({ length: 12 }, (_, i) =>
       String(i + 1).padStart(2, "0")
     );
     const infiniteNumbers = [...numbers, ...numbers, ...numbers];
     const scrollRef = useRef<ScrollView>(null);
     const [scrollPosition, setScrollPosition] = useState(0);
-    const [selectedHour, setSelectedHour] = useState(1);
     const [hasInitialized, setHasInitialized] = useState(false);
+
+    const hour = useNewAlarmStore((s) => s.hour);
+    const setHour = useNewAlarmStore((s) => s.setHour);
   
     // Wait for layout before setting initial position
     const handleLayout = () => {
       if (!hasInitialized) {
         const now = moment();
-        let hour = now.hour();
-        hour = (hour % 12) || 12;
-        const hourStr = String(hour).padStart(2, "0");
+        let initialHour = now.hour() % 12 || 12;
+        const hourStr = String(initialHour).padStart(2, "0");
         const initialIndex = numbers.indexOf(hourStr);
         const safeInitialIndex = initialIndex === -1 ? 0 : initialIndex;
         const y =
           (numbers.length + safeInitialIndex - Math.floor(VISIBLE_ITEMS / 2)) * ITEM_HEIGHT;
         scrollRef.current?.scrollTo({ y, animated: false });
-        setSelectedHour(hour);
+        setHour(initialHour);
         setScrollPosition(y);
-        onHourChange(hour);
         setHasInitialized(true);
       }
     };
@@ -44,17 +45,17 @@ const HourPicker: React.FC<HourPickerProps> = ({ onHourChange }) => {
     const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetY = event.nativeEvent.contentOffset.y;
       setScrollPosition(offsetY);
-  
+
       const totalRows = numbers.length * 3;
       const centerIndex = Math.round(offsetY / ITEM_HEIGHT) + Math.floor(VISIBLE_ITEMS / 2);
       const trueIndex = centerIndex % totalRows;
       const numberIndex = trueIndex % numbers.length;
       const value = Number(numbers[numberIndex]);
-      if (value !== selectedHour) {
-        setSelectedHour(value);
-        onHourChange(value);
+      if (value !== hour) {
+        setHour(value);
       }
     };
+
   
     const handleMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const offsetY = event.nativeEvent.contentOffset.y;
@@ -100,7 +101,6 @@ const HourPicker: React.FC<HourPickerProps> = ({ onHourChange }) => {
             );
           })}
         </ScrollView>
-        <Text>{selectedHour}</Text>
       </View>
     );
   };
@@ -110,28 +110,29 @@ type MinutePickerProps = {
     onMinuteChange: (minute: number) => void;
 };
 
-const MinutePicker: React.FC<MinutePickerProps> = ({ onMinuteChange }) => {
+const MinutePicker: React.FC<MinutePickerProps> = () => {
     const numbers = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
     const infiniteNumbers = [...numbers, ...numbers, ...numbers];
   
     const scrollRef = useRef<ScrollView>(null);
     const [scrollPosition, setScrollPosition] = useState(0);
-    const [selectedMinute, setSelectedMinute] = useState<number>(0);
     const [hasInitialized, setHasInitialized] = useState(false);
-  
+
+    const minute = useNewAlarmStore((s) => s.minute);
+    const setMinute = useNewAlarmStore((s) => s.setMinute);
+
     // Wait until layout before setting initial position
     const handleLayout = () => {
       if (!hasInitialized) {
         const now = moment();
-        const minute = now.minute();
-        const minuteStr = String(minute).padStart(2, "0");
+        const initialMinute = now.minute();
+        const minuteStr = String(initialMinute).padStart(2, "0");
         const initialIndex = numbers.indexOf(minuteStr);
         const safeInitialIndex = initialIndex === -1 ? 0 : initialIndex;
         const y = (numbers.length + safeInitialIndex - Math.floor(VISIBLE_ITEMS / 2)) * ITEM_HEIGHT;
         scrollRef.current?.scrollTo({ y, animated: false });
-        setSelectedMinute(minute);
+        setMinute(initialMinute);
         setScrollPosition(y);
-        onMinuteChange(minute);
         setHasInitialized(true);
       }
     };
@@ -144,9 +145,8 @@ const MinutePicker: React.FC<MinutePickerProps> = ({ onMinuteChange }) => {
       const trueIndex = centerIndex % totalRows;
       const numberIndex = trueIndex % numbers.length;
       const value = Number(numbers[numberIndex]);
-      if (value !== selectedMinute) {
-        setSelectedMinute(value);
-        onMinuteChange(value);
+      if (value !== minute) {
+        setMinute(value);
       }
     };
   
@@ -193,7 +193,6 @@ const MinutePicker: React.FC<MinutePickerProps> = ({ onMinuteChange }) => {
             );
           })}
         </ScrollView>
-        <Text>{selectedMinute}</Text>
       </View>
     );
   };

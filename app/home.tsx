@@ -12,10 +12,13 @@ import Fontisto from "@expo/vector-icons/Fontisto";
 import { Card, Title, Paragraph } from "react-native-paper";
 import { useState } from "react";
 import { router } from 'expo-router';
+import { useAlarmsStore } from '../stores/alarmsStore';
 
 
 export default function HomeScreen() {
     const [newAlarmButtonPressed, setNewAlarmButtonPressed] = useState<boolean>(false);
+    const alarms = useAlarmsStore((s) => s.alarms);
+
     return (
         <SafeAreaView style={globalStyles.safeArea}>
             <ScrollView style={globalStyles.scrollView}>
@@ -30,7 +33,13 @@ export default function HomeScreen() {
                         />
                     </Pressable>
                 </View>
-                <CardComponent />
+                {alarms.length === 0 ? (
+                    <Text>No alarms yet.</Text>
+                ) : (
+                    alarms.map((alarm) => (
+                        <CardComponent alarm={alarm} key={alarm.id} />
+                    ))
+                )}
             </ScrollView>
             <Pressable 
                 onPressIn={() => setNewAlarmButtonPressed(true)}
@@ -43,16 +52,23 @@ export default function HomeScreen() {
     )
 }
 
-const CardComponent = () => {
+type Alarm = {
+    id: string;
+    hour: number;
+    minute: number;
+    ampm: string;
+}
+
+const CardComponent = (props: { alarm: Alarm }) => {
     return (
         <Card style={styles.card}>
             <Card.Content style={styles.cardContent}>
                 <View>
-                    <Paragraph style={styles.day}>
+                    {/* <Paragraph style={styles.day}>
                         Mon, Tue
-                    </Paragraph>
+                    </Paragraph> */}
                     <Title style={styles.time}>
-                        10:00 AM
+                        {`${props.alarm.hour.toString().padStart(2, "0")}:${props.alarm.minute.toString().padStart(2, "0")} ${props.alarm.ampm}`}
                     </Title>
                     <Paragraph style={styles.caption}>
                         Wake up
@@ -113,7 +129,3 @@ const styles = StyleSheet.create({
         transform: [{ scale: 0.9 }],
     },
 })
-
-
-
-
