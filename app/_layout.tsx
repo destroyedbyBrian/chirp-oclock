@@ -37,6 +37,15 @@ export default function Layout() {
                 animationDuration: 600,
             })}
         />
+        <Stack.Screen 
+            name="testNFC"
+            options={({ route }) => ({
+                title: 'Test NFC',
+                headerShown: false,
+                animation: 'simple_push',
+                animationDuration: 600,
+            })}
+        />
     </Stack>
     );
 }
