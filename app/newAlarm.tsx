@@ -5,68 +5,25 @@ import {
     StyleSheet,
     Pressable,
     TouchableOpacity,
-    Modal,
-    Animated,
-    Easing
 } from "react-native";
 import globalStyles from "./styles/globalStyles";
 import Feather from "@expo/vector-icons/Feather";
 import Entypo from "@expo/vector-icons/Entypo";
 import Fontisto from "@expo/vector-icons/Fontisto";
 import AntDesign from "@expo/vector-icons/AntDesign";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { Card, Title, Paragraph } from "react-native-paper";
 import { HourPicker, MinutePicker } from "../components/timePicker";
 import AmPm from "../components/ampmPicker";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { router } from "expo-router";
-import Svg, { Path } from 'react-native-svg';
 import { useNewAlarmStore } from '../stores/newAlarmStore';
 import { useAlarmsStore } from '../stores/alarmsStore';
+import NfcManager, {NfcTech} from 'react-native-nfc-manager';
 
 
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-
-function AnimatedCheckmark({ size = 40, color = '#2ecc71', duration = 500 }) {
-    const animation = useRef(new Animated.Value(0)).current;
-  
-    // This path draws a standard check mark
-    const CHECK_MARK_PATH = 'M10 20 L18 28 L30 12';
-    // Length is estimated; for perfect match you can use Path measurement tools
-    const PATH_LENGTH = 30;
-  
-    useEffect(() => {
-      Animated.timing(animation, {
-        toValue: 1,
-        duration,
-        useNativeDriver: true,
-        easing: Easing.ease,
-      }).start();
-    }, []);
-  
-    return (
-      <View>
-        <Svg width={size} height={size} viewBox="0 0 40 40">
-          <AnimatedPath
-            d={CHECK_MARK_PATH}
-            stroke={color}
-            strokeWidth={4}
-            strokeLinecap="round"
-            fill="none"
-            strokeDasharray={PATH_LENGTH}
-            strokeDashoffset={animation.interpolate({
-              inputRange: [0, 1],
-              outputRange: [PATH_LENGTH, 0],
-            })}
-          />
-        </Svg>
-      </View>
-    );
-  }
 
 export default function NewAlarmScreen() {
-    const [modalVisible, setModalVisible] = useState<boolean>(false);
-    const [linkSuccessful, setLinkSuccessful] = useState<boolean>(false);
+    const [successfulNFC, setSuccessfulNFC] = useState<boolean>(false);
 
     const hour = useNewAlarmStore((s) => s.hour);
     const minute = useNewAlarmStore((s) => s.minute);
@@ -75,8 +32,6 @@ export default function NewAlarmScreen() {
     const setHour = useNewAlarmStore((s) => s.setHour);
     const setMinute = useNewAlarmStore((s) => s.setMinute);
     const setAmpm = useNewAlarmStore((s) => s.setAmpm);
-
-    const handleNFCScan = () => setModalVisible(true);
 
     const addAlarm = useAlarmsStore((s) => s.addAlarm);
 
@@ -87,19 +42,35 @@ export default function NewAlarmScreen() {
           minute: minute,
           ampm: ampm,
           });
-        router.push('/home');
+        router.push('/');
       };
 
+    const [testNFCButton, setTestNFCButton] = useState<boolean>(false);
+
     useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if (modalVisible) {
-            setLinkSuccessful(false);
-            timer = setTimeout(() => {
-                setLinkSuccessful(true);
-            }, 3000);
+        let cancelled = false;
+        if (testNFCButton) {
+          (async () => {
+            try {
+              await NfcManager.start();
+              await NfcManager.requestTechnology([
+                NfcTech.Ndef
+              ]);
+              const tag = await NfcManager.getTag();
+              console.log('NFC Tag:', tag);
+              setSuccessfulNFC(true);
+            } catch (e) {
+              console.warn('NFC error:', e);
+            } finally {
+              if (!cancelled) {
+                NfcManager.cancelTechnologyRequest();
+              }
+            }
+          })();
         }
-        return () => clearTimeout(timer);
-    }, [modalVisible]);
+        return () => { cancelled = true }
+      }, [testNFCButton])
+      
 
 
     return (
@@ -112,7 +83,7 @@ export default function NewAlarmScreen() {
                         color="black"
                         style={styles.cancelButton}
                         // onPress={() => router.back()}
-                        onPress={() => router.push('/home')}
+                        onPress={() => router.push('/')}
                     />
                     <Text style={[globalStyles.subHeaderText, {fontSize: 24, marginLeft: 24}]}>New Alarm</Text>
                     <Pressable>
@@ -120,7 +91,7 @@ export default function NewAlarmScreen() {
                             style={styles.saveButton}
                             onPress={() => {
                                 handleDone()
-                                router.push('/home')
+                                router.push('/')
                             }}
                         >Done</Text>
                     </Pressable>
@@ -170,7 +141,7 @@ export default function NewAlarmScreen() {
                                 style={{ marginTop: -4 }}
                             />
                         </View>
-                        <TouchableOpacity onPress={handleNFCScan}>
+                        <TouchableOpacity onPress={() => setTestNFCButton(true)}>
                             <View style={styles.row}>
                                 <View>
                                     <Title style={{ fontSize: 18, fontWeight: "bold" }}>NFC Link</Title>
@@ -193,81 +164,12 @@ export default function NewAlarmScreen() {
                         </TouchableOpacity>
                     </Card.Content>
                 </Card>
-                <Modal
-                    animationType="fade"
-                    transparent={true}
-                    visible={modalVisible}
-                    onRequestClose={() => setModalVisible(false)}
-                >
-                    <View style={styles.modalWrapper}>
-                        <Card style={styles.modalCard}>
-                            <Card.Content>
-                                <View style={styles.modalContent}>
-                                    {linkSuccessful ? (
-                                        <>
-                                            <View style={{alignItems: 'center', justifyContent: 'center'}}>
-                                                <Text style={{fontWeight: "bold", fontSize: 22, marginBottom: 20, paddingTop: 4,}}>Link Successful</Text>
-                                                <View style={styles.iconWrapper}>
-                                                    <Entypo
-                                                            name="circle"
-                                                            size={100}
-                                                            color="black"
-                                                        />
-                                                        <View style={styles.iconContainer}>
-                                                            <AnimatedCheckmark size={90} color="black"/>
-                                                        </View>
-                                                </View>
-                                            </View>
-                                            <TouchableOpacity
-                                                style={styles.closeNFCModal}
-                                                onPress={() => setModalVisible(false)}
-                                            >
-                                                <Text style={{ fontWeight: "bold", fontSize: 18 }}>
-                                                    {linkSuccessful ? "Close" : "Cancel"}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Title
-                                                style={{
-                                                    fontWeight: "bold",
-                                                    paddingTop: 4,
-                                                }}>Ready to Scan</Title>
-                                            <View style={styles.iconWrapper}>
-                                                <Entypo
-                                                    name="circle"
-                                                    size={100}
-                                                    color="black"
-                                                />
-                                                <View style={styles.iconContainer}>
-                                                    <Ionicons
-                                                        name="phone-portrait-outline"
-                                                        size={100}
-                                                        color="black"
-                                                    />
-                                                </View>
-                                            </View>
-                                            <Text style={{fontSize: 16, fontWeight: "500"}}>Approach an NFC tag</Text>
-                                            <TouchableOpacity
-                                                style={styles.closeNFCModal}
-                                                onPress={() => setModalVisible(false)}
-                                            >
-                                                <Text style={{ fontWeight: "bold", fontSize: 18 }}>
-                                                    {linkSuccessful ? "Close" : "Cancel"}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        </>
-                                    )}
-                                </View>
-                            </Card.Content>
-                        </Card>
-                    </View>
-                </Modal>
+                <Text>Scan successful:{successfulNFC ? "true" : "false"}</Text>
             </View>
         </SafeAreaView>
     )
 }
+
 
 const styles = StyleSheet.create({
     cancelButton: {

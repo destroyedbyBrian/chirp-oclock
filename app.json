@@ -2,7 +2,7 @@
   "expo": {
     "name": "NFC Alarm 2025",
     "slug": "nfca-apr-2025",
-    "version": "1.0.2",
+    "version": "2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -10,13 +10,18 @@
     "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.briantan.nfcaalarm",
-      "deploymentTarget": "13.0",
+      "buildNumber": "2",
       "infoPlist": {
         "NFCReaderUsageDescription": "This app uses NFC to scan tags for alarm dismissal",
-        "com.apple.developer.nfc.readersession.formats": ["NDEF"]
+        "com.apple.developer.nfc.readersession.formats": [
+          "NDEF"
+        ],
+        "NSUserNotificationUsageDescription": "Allow NFC Alarm 2025 to send notifications."
       },
       "entitlements": {
-        "com.apple.developer.nfc.readersession.formats": ["NDEF"]
+        "com.apple.developer.nfc.readersession.formats": [
+          "NDEF"
+        ]
       }
     },
     "android": {
@@ -37,7 +42,9 @@
           "nfcPermission": "This app uses NFC to scan tags for alarm dismissal"
         }
       ],
-      "expo-router"
+      "expo-router",
+      "expo-notifications",
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true

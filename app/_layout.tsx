@@ -12,9 +12,9 @@ export default function Layout() {
         }}
     >
         <Stack.Screen
-            name="home"
+            name="index"
             options={{
-                title: 'Home',
+                title: 'index',
                 headerShown: false,
             }}
         />
@@ -34,7 +34,7 @@ export default function Layout() {
                 title: 'New Alarm',
                 headerShown: false,
                 animation: 'simple_push',
-                animationDuration: 600,
+                animationDuration: 500,
             })}
         />
         <Stack.Screen 
@@ -43,7 +43,16 @@ export default function Layout() {
                 title: 'Test NFC',
                 headerShown: false,
                 animation: 'simple_push',
-                animationDuration: 600,
+                animationDuration: 500,
+            })}
+        />
+         <Stack.Screen 
+            name="testPushNoti"
+            options={({ route }) => ({
+                title: 'Test Push Notification',
+                headerShown: false,
+                animation: 'simple_push',
+                animationDuration: 500,
             })}
         />
     </Stack>

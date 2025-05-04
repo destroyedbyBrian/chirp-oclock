@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Alert } from 'react-native';
 import NfcManager from 'react-native-nfc-manager';
 
 export default function NFCDetector() {
-  const [isSupported, setIsSupported] = useState<boolean | null>(null);
+  const [isNFCSupported, setIsNFCSupported] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -15,7 +15,7 @@ export default function NFCDetector() {
         // Check if hardware supports NFC
         const supported = await NfcManager.isSupported();
         console.log('NFC supported:', supported);
-        setIsSupported(supported);
+        setIsNFCSupported(supported);
         
         if (supported) {
           // Initialize NFC
@@ -41,9 +41,9 @@ export default function NFCDetector() {
     <View style={styles.container}>
       <Text style={styles.title}>NFC Detector</Text>
       
-      {isSupported === null ? (
+      {isNFCSupported === null ? (
         <Text style={styles.status}>Checking NFC support...</Text>
-      ) : isSupported ? (
+      ) : isNFCSupported ? (
         <Text style={styles.statusSuccess}>NFC is supported on this device</Text>
       ) : (
         <Text style={styles.statusError}>NFC is not supported on this device</Text>
