@@ -3,11 +3,17 @@ import { useEffect, useRef, useState } from 'react';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import { Audio } from 'expo-av';
+import { useAlarmSoundStore } from '../stores/soundStore';
+ 
 
 export default function Layout() {
     const [notification, setNotification] = useState<Notifications.Notification | undefined>(undefined);  
     const notificationListener = useRef<Notifications.EventSubscription>();  
     const responseListener = useRef<Notifications.EventSubscription>(); 
+
+    const setSoundRef = useAlarmSoundStore(s => s.setSoundRef);
+
 
     useEffect(() => {
         requestForPushNotification();
@@ -16,13 +22,14 @@ export default function Layout() {
         Notifications.setNotificationHandler({
           handleNotification: async () => ({
             shouldShowAlert: true,
-            shouldPlaySound: true,
+            shouldPlaySound: false,
             shouldSetBadge: true,
           }),
         });
 
         notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
           setNotification(notification);
+          playSoundEndlessly()
         });
     
         responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
@@ -39,6 +46,44 @@ export default function Layout() {
         }
       }, []);
 
+      async function requestForPushNotification() {
+        if (Device.isDevice) {
+          const { status: existingStatus } = await Notifications.getPermissionsAsync();
+          let finalStatus = existingStatus;
+          if (existingStatus !== 'granted') {
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
+          }
+          if (finalStatus !== 'granted') {
+            alert('Failed to get push token for push notification!');
+            return;
+          }
+          try {
+            const projectId =
+              Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+            if (!projectId) {
+              throw new Error('Project ID not found');
+            }
+          } catch (e) {
+            console.log(e)
+          }
+        } else {
+          alert('Must use physical device for Push Notifications');
+        }
+      }
+
+      async function playSoundEndlessly() {
+        try {
+          const { sound } = await Audio.Sound.createAsync(
+            require('../assets/sounds/netflix.mp3'), 
+            { shouldPlay: true, isLooping: true }
+          );
+          setSoundRef(sound);
+        } catch (e) {
+          console.log("Audio error", e);
+        }
+      }
+
     return (
     <Stack
         screenOptions={{
@@ -50,11 +95,11 @@ export default function Layout() {
         }}
     >
         <Stack.Screen
-            name="index"
-            options={{
-                title: 'index',
-                headerShown: false,
-            }}
+          name="index"
+          options={() => ({
+            title: 'index',
+            headerShown: false,
+          })}
         />
         <Stack.Screen
             name="settings"
@@ -113,30 +158,4 @@ export default function Layout() {
         />
     </Stack>
     );
-}
-
-async function requestForPushNotification() {
-  if (Device.isDevice) {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
-    }
-    if (finalStatus !== 'granted') {
-      alert('Failed to get push token for push notification!');
-      return;
-    }
-    try {
-      const projectId =
-        Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
-      if (!projectId) {
-        throw new Error('Project ID not found');
-      }
-    } catch (e) {
-      console.log(e)
-    }
-  } else {
-    alert('Must use physical device for Push Notifications');
-  }
 }

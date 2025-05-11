@@ -12,16 +12,19 @@ import globalStyles from './styles/globalStyles';
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Fontisto from "@expo/vector-icons/Fontisto";
 import { Card, Title, Paragraph } from "react-native-paper";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { router } from 'expo-router';
 import { useAlarmsStore } from '../stores/alarmsStore';
 import * as Notifications from 'expo-notifications';
-import { Audio } from 'expo-av';
+import { useAlarmSoundStore } from '../stores/soundStore';
 
 
 export default function HomeScreen() {
     const [newAlarmButtonPressed, setNewAlarmButtonPressed] = useState<boolean>(false);
     const alarms = useAlarmsStore((s) => s.alarms);
+
+    const soundRef = useAlarmSoundStore(s => s.soundRef);
+
 
     useEffect(() => {
         Notifications.cancelAllScheduledNotificationsAsync().then(() => {
@@ -77,7 +80,7 @@ export default function HomeScreen() {
                 body: `Alarm for ${alarm.hour.toString().padStart(2, "0")}:${alarm.minute
                 .toString()
                 .padStart(2, "0")} ${alarm.ampm.toUpperCase()}`,
-                sound: "netflix.mp3"
+                // sound: "netflix.mp3"
             },
             trigger: {
                 type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -86,65 +89,15 @@ export default function HomeScreen() {
         });
     }
 
-    // async function playSound() {
-    //     const { sound } = await Audio.Sound.createAsync(require('../assets/sounds/netflix.mp3'));
-    //     setSound(sound);
-    //     await sound.playAsync();
-    // }
+    async function stopAlarm() {
+        if (soundRef) {
+          await soundRef.stopAsync();
+          await soundRef.unloadAsync();
+          // Optionally reset in store:
+          useAlarmSoundStore.getState().setSoundRef(null);
+        }
+      }
 
-    // async function playSound() {
-    //     const now = Date.now();
-    //     console.log("[DEBUG] playSound() called at", now);
-    //     // Play max once every 2 seconds (tweak as needed)
-    //     if (now - lastSoundPlayedAt.current < 2000) {
-    //         console.log("[DEBUG] playSound debounced: not playing sound");
-    //       return;
-    //     }
-    //     lastSoundPlayedAt.current = now;
-      
-    //     // Stop previous sound
-    //     if (soundRef.current) {
-    //       try {
-    //         await soundRef.current.stopAsync();
-    //         await soundRef.current.unloadAsync();
-    //       } catch (e) {}
-    //       soundRef.current = null;
-    //     }
-    //     const { sound } = await Audio.Sound.createAsync(require('../assets/sounds/netflix.mp3'));
-    //     soundRef.current = sound;
-    //     await sound.playAsync();
-    //     console.log("[DEBUG] Sound played at", now);
-    //   }
-
-
-    // async function playSoundEndlessly() {
-    //     // Stop and unload any existing sound first
-    //     if (soundRef.current) {
-    //         try {
-    //             await soundRef.current.stopAsync();
-    //             await soundRef.current.unloadAsync();
-    //         } catch (e) { /* handle error if any */ }
-    //         soundRef.current = null;
-    //     }
-    //     // Load the sound
-    //     const { sound: newSound } = await Audio.Sound.createAsync(
-    //         require('../assets/sounds/ringtone.mp3')
-    //     );
-    //     await newSound.setIsLoopingAsync(true);
-    //     await newSound.playAsync();
-    //     soundRef.current = newSound;
-    // }
-    
-    // async function stopSound() {
-    //     if (soundRef.current) {
-    //         try {
-    //             await soundRef.current.stopAsync();
-    //             await soundRef.current.unloadAsync();
-    //         } catch (e) {}
-    //         soundRef.current = null;
-    //     }
-    // }
- 
     return (
         <SafeAreaView style={globalStyles.safeArea}>
             <ScrollView style={globalStyles.scrollView}>
@@ -171,6 +124,7 @@ export default function HomeScreen() {
                     ))
                 )}
             </ScrollView>
+            <Button title="stop Alarm" onPress={() => stopAlarm()} />
             <Pressable 
                 onPressIn={() => setNewAlarmButtonPressed(true)}
                 onPressOut={() => setNewAlarmButtonPressed(false)}
