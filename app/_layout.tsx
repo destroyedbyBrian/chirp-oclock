@@ -1,6 +1,44 @@
 import { Stack } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 
 export default function Layout() {
+    const [notification, setNotification] = useState<Notifications.Notification | undefined>(undefined);  
+    const notificationListener = useRef<Notifications.EventSubscription>();  
+    const responseListener = useRef<Notifications.EventSubscription>(); 
+
+    useEffect(() => {
+        requestForPushNotification();
+    
+        // Mount notification handler on initial render
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+          }),
+        });
+
+        notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+          setNotification(notification);
+        });
+    
+        responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+        console.log(response);
+        });
+
+        return () => {
+            if (notificationListener.current) {
+              Notifications.removeNotificationSubscription(notificationListener.current);
+            }
+            if (responseListener.current) {
+              Notifications.removeNotificationSubscription(responseListener.current);
+            }
+        }
+      }, []);
+
     return (
     <Stack
         screenOptions={{
@@ -38,7 +76,16 @@ export default function Layout() {
             })}
         />
         <Stack.Screen 
-            name="testNFC"
+            name="editAlarm"
+            options={({ route }) => ({
+                title: 'Edit Alarm',
+                headerShown: false,
+                animation: 'simple_push',
+                animationDuration: 500,
+            })}
+        />
+        <Stack.Screen 
+            name="testRun/testNFC"
             options={({ route }) => ({
                 title: 'Test NFC',
                 headerShown: false,
@@ -46,10 +93,19 @@ export default function Layout() {
                 animationDuration: 500,
             })}
         />
-         <Stack.Screen 
-            name="testPushNoti"
+        {/* <Stack.Screen 
+            name="testRun/testPushNoti"
             options={({ route }) => ({
                 title: 'Test Push Notification',
+                headerShown: false,
+                animation: 'simple_push',
+                animationDuration: 500,
+            })}
+        /> */}
+        <Stack.Screen 
+            name="testRun/testGesture"
+            options={({ route }) => ({
+                title: 'Test Gesture Handler',
                 headerShown: false,
                 animation: 'simple_push',
                 animationDuration: 500,
@@ -59,4 +115,28 @@ export default function Layout() {
     );
 }
 
-
+async function requestForPushNotification() {
+  if (Device.isDevice) {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    if (finalStatus !== 'granted') {
+      alert('Failed to get push token for push notification!');
+      return;
+    }
+    try {
+      const projectId =
+        Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+      if (!projectId) {
+        throw new Error('Project ID not found');
+      }
+    } catch (e) {
+      console.log(e)
+    }
+  } else {
+    alert('Must use physical device for Push Notifications');
+  }
+}

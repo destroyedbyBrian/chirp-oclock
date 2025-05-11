@@ -9,9 +9,6 @@ export default function NFCDetector() {
   useEffect(() => {
     const checkNfc = async () => {
       try {
-        // For debugging
-        console.log('Checking NFC support...');
-        
         // Check if hardware supports NFC
         const supported = await NfcManager.isSupported();
         console.log('NFC supported:', supported);

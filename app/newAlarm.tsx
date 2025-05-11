@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
 } from "react-native";
 import globalStyles from "./styles/globalStyles";
+import alarmSettingStyles from "./styles/alarmSettingStyles";
 import Feather from "@expo/vector-icons/Feather";
 import Entypo from "@expo/vector-icons/Entypo";
 import Fontisto from "@expo/vector-icons/Fontisto";
@@ -19,7 +20,6 @@ import { router } from "expo-router";
 import { useNewAlarmStore } from '../stores/newAlarmStore';
 import { useAlarmsStore } from '../stores/alarmsStore';
 import NfcManager, {NfcTech} from 'react-native-nfc-manager';
-
 
 
 export default function NewAlarmScreen() {
@@ -50,26 +50,29 @@ export default function NewAlarmScreen() {
     useEffect(() => {
         let cancelled = false;
         if (testNFCButton) {
-          (async () => {
-            try {
-              await NfcManager.start();
-              await NfcManager.requestTechnology([
-                NfcTech.Ndef
-              ]);
-              const tag = await NfcManager.getTag();
-              console.log('NFC Tag:', tag);
-              setSuccessfulNFC(true);
-            } catch (e) {
-              console.warn('NFC error:', e);
-            } finally {
-              if (!cancelled) {
-                NfcManager.cancelTechnologyRequest();
-              }
-            }
-          })();
+            (async () => {
+                try {
+                    await NfcManager.start();
+                    await NfcManager.requestTechnology([NfcTech.Ndef]);
+                    const tag = await NfcManager.getTag();
+                    console.log('NFC Tag:', tag);
+                    if (!cancelled) setSuccessfulNFC(true);
+                } catch (e) {
+                    if (!cancelled) {
+                        setSuccessfulNFC(false);
+                    }
+                    console.warn('NFC error:', e);
+                } finally {
+                    if (!cancelled) {
+                        NfcManager.cancelTechnologyRequest();
+                    }
+                    // Allow future scan
+                    if (!cancelled) setTestNFCButton(false);
+                }
+            })();
         }
-        return () => { cancelled = true }
-      }, [testNFCButton])
+        return () => { cancelled = true; }
+    }, [testNFCButton]);
       
 
 
@@ -81,14 +84,14 @@ export default function NewAlarmScreen() {
                         name="x"
                         size={24}
                         color="black"
-                        style={styles.cancelButton}
+                        style={alarmSettingStyles.cancelButton}
                         // onPress={() => router.back()}
                         onPress={() => router.push('/')}
                     />
                     <Text style={[globalStyles.subHeaderText, {fontSize: 24, marginLeft: 24}]}>New Alarm</Text>
                     <Pressable>
                         <Text 
-                            style={styles.saveButton}
+                            style={alarmSettingStyles.saveButton}
                             onPress={() => {
                                 handleDone()
                                 router.push('/')
@@ -96,18 +99,18 @@ export default function NewAlarmScreen() {
                         >Done</Text>
                     </Pressable>
                 </View>
-                <Text style={styles.subHeader2}>Ring in 7hours: 24 minutes</Text>
-                <Card style={styles.cardContainer1}>
-                    <Card.Content style={styles.cardContent1}>
+                <Text style={alarmSettingStyles.subHeader2}>Ring in 7hours: 24 minutes</Text>
+                <Card style={alarmSettingStyles.cardContainer1}>
+                    <Card.Content style={alarmSettingStyles.cardContent1}>
                         <HourPicker onHourChange={setHour} />
-                        <Text style={styles.semiCollen}>:</Text>
+                        <Text style={alarmSettingStyles.semiCollen}>:</Text>
                         <MinutePicker onMinuteChange={setMinute} />
                         <AmPm onAmpmChange={setAmpm} />
                     </Card.Content>
                 </Card>
-                <Card style={styles.cardContainer2}>
-                    <Card.Content style={styles.cardContent2}>
-                        <View style={styles.row}>
+                <Card style={alarmSettingStyles.cardContainer2}>
+                    <Card.Content style={alarmSettingStyles.cardContent2}>
+                        <View style={alarmSettingStyles.row}>
                             <View>
                                 <Title style={{ fontSize: 18, fontWeight: "bold" }}>Ringtone</Title>
                                 <Paragraph
@@ -130,7 +133,7 @@ export default function NewAlarmScreen() {
                                 }}
                             />
                         </View>
-                        <View style={styles.row}>
+                        <View style={alarmSettingStyles.row}>
                             <View>
                                 <Title style={{ fontSize: 18, fontWeight: "bold" }}>Vibrate</Title>
                             </View>
@@ -142,7 +145,7 @@ export default function NewAlarmScreen() {
                             />
                         </View>
                         <TouchableOpacity onPress={() => setTestNFCButton(true)}>
-                            <View style={styles.row}>
+                            <View style={alarmSettingStyles.row}>
                                 <View>
                                     <Title style={{ fontSize: 18, fontWeight: "bold" }}>NFC Link</Title>
                                     <Paragraph
@@ -152,7 +155,14 @@ export default function NewAlarmScreen() {
                                             color: "grey",
                                             marginTop: -7,
                                         }}
-                                    >No Tags Connected</Paragraph>
+                                    >
+                                        {testNFCButton 
+                                            ? 'Scanning...'
+                                            : successfulNFC
+                                                ? 'Tag Connected'
+                                                : 'No Tags Connected'
+                                        }
+                                    </Paragraph>
                                 </View>
                                 <AntDesign
                                     name="disconnect"
@@ -169,96 +179,3 @@ export default function NewAlarmScreen() {
         </SafeAreaView>
     )
 }
-
-
-const styles = StyleSheet.create({
-    cancelButton: {
-        marginTop: -8
-    },
-    saveButton: {
-        fontSize: 20,
-        fontWeight: "bold",
-        marginTop: -12
-    },
-    subHeader2: {
-        fontSize: 14,
-        fontWeight: "bold",
-        marginTop: -22,
-        textAlign: "center"
-    },
-    cardContainer1: {
-        marginTop: 30,
-        width: 350,
-        alignSelf: "center",
-    },
-    cardContainer2: {
-        marginTop: 30,
-        width: 350,
-        display: "flex",
-        flexDirection: "column",
-    },
-    cardContent1: {
-        flexDirection: "row",
-        justifyContent: "space-evenly",
-        margin: -15,
-    },
-    cardContent2: {
-        paddingTop: -14,
-    },
-    semiCollen: {
-        fontSize: 36,
-        fontWeight: "700",
-        alignSelf: "center",
-    },
-    row: {
-        paddingTop: 14,
-        display: "flex",
-        flexDirection: "row",
-        justifyContent: "space-between",
-    },
-    modalWrapper: {
-        flex: 1,
-        justifyContent: "flex-end",
-        paddingBottom: 12,
-        paddingHorizontal: 6,
-        backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent background
-    },
-    modalCard: {
-        marginHorizontal: 3,
-        backgroundColor: "#ffffff",
-        elevation: 1,
-        borderRadius: 20,
-        marginBottom: 10,
-        width: "95%",
-        alignSelf: "center",
-    },
-    modalContent: {
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-    },
-    iconWrapper: {
-        position: "relative",
-        height: 160, // Match the size of the Entypo circle
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    iconContainer: {
-        position: "absolute",
-        width: 100, // Same as the circle
-        height: 62, // This reduces the height to show only 3/4 of the phone icon
-        overflow: "hidden", // Cut off the top portion of the phone
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    closeNFCModal: {
-        backgroundColor: "#F3F3F3",
-        padding: 14,
-        borderRadius: 10,
-        alignItems: "center",
-        width: "100%",
-        marginTop: 40,
-        marginBottom: 4,
-    },
-})
-

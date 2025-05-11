@@ -16,7 +16,9 @@
         "com.apple.developer.nfc.readersession.formats": [
           "NDEF"
         ],
-        "NSUserNotificationUsageDescription": "Allow NFC Alarm 2025 to send notifications."
+        "NSUserNotificationUsageDescription": "Allow NFC Alarm 2025 to send notifications.",
+         "UIBackgroundModes": ["audio", "fetch", "remote-notification"],
+        "NSMicrophoneUsageDescription": "This app does not require microphone access"
       },
       "entitlements": {
         "com.apple.developer.nfc.readersession.formats": [
@@ -43,8 +45,16 @@
         }
       ],
       "expo-router",
-      "expo-notifications",
-      "expo-audio"
+      ["expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/ringtone.mp3",
+            "./assets/sounds/netflix.mp3"
+          ]
+        }
+    
+      ],
+      "expo-av"
     ],
     "experiments": {
       "typedRoutes": true

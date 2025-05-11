@@ -11,6 +11,8 @@ export type Alarm = {
 type AlarmsState = {
   alarms: Alarm[];
   addAlarm: (alarm: Alarm) => void;
+  updateAlarm: (updatedAlarm: Alarm) => void;
+  deleteAlarm: (id: string) => void;
 };
 
 export const useAlarmsStore = create<AlarmsState>((set) => ({
@@ -19,4 +21,15 @@ export const useAlarmsStore = create<AlarmsState>((set) => ({
     set((state) => ({
       alarms: [...state.alarms, alarm],
     })),
+  updateAlarm: (updated) =>
+    set((state) => ({
+      alarms: state.alarms.map((alarm) =>
+        alarm.id === updated.id ? updated : alarm
+      ),
+    })),
+  deleteAlarm: (id) =>
+    set((state) => ({
+      alarms: state.alarms.filter(alarm => alarm.id !== id),
+    })),
 }));
+

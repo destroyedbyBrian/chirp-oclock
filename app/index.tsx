@@ -5,7 +5,8 @@ import {
     Text,
     StyleSheet,
     Pressable,
-    Platform
+    TouchableOpacity,
+    Button
 } from "react-native";
 import globalStyles from './styles/globalStyles';
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -14,29 +15,19 @@ import { Card, Title, Paragraph } from "react-native-paper";
 import { useState, useEffect, useRef } from "react";
 import { router } from 'expo-router';
 import { useAlarmsStore } from '../stores/alarmsStore';
-import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
-import Constants from 'expo-constants';
+import { Audio } from 'expo-av';
 
-
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-    }),
-  });
 
 export default function HomeScreen() {
     const [newAlarmButtonPressed, setNewAlarmButtonPressed] = useState<boolean>(false);
     const alarms = useAlarmsStore((s) => s.alarms);
 
-    // Push Notification State
-    const [expoPushToken, setExpoPushToken] = useState('');  
-    // const [channels, setChannels] = useState<Notifications.NotificationChannel[]>([]);  
-    const [notification, setNotification] = useState<Notifications.Notification | undefined>(undefined);  
-    const notificationListener = useRef<Notifications.EventSubscription>();  
-    const responseListener = useRef<Notifications.EventSubscription>(); 
+    useEffect(() => {
+        Notifications.cancelAllScheduledNotificationsAsync().then(() => {
+            alarms.forEach(alarm => scheduleAlarmNotification(alarm));
+        });
+    }, [])
 
     const uniqueAlarms = Array.from(new Map(alarms.map(alarm => [
         `${alarm.hour}:${alarm.minute} ${alarm.ampm}`, alarm
@@ -81,47 +72,85 @@ export default function HomeScreen() {
     async function scheduleAlarmNotification(alarm: Alarm) {
         const alarmDate = getNextAlarmDate(alarm);
         await Notifications.scheduleNotificationAsync({
-        content: {
-            title: "⏰ Alarm",
-            body: `Alarm for ${alarm.hour.toString().padStart(2, "0")}:${alarm.minute
-            .toString()
-            .padStart(2, "0")} ${alarm.ampm.toUpperCase()}`,
-            sound: true,
-        },
-        trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: alarmDate
-        },
+            content: {
+                title: "⏰ Alarm",
+                body: `Alarm for ${alarm.hour.toString().padStart(2, "0")}:${alarm.minute
+                .toString()
+                .padStart(2, "0")} ${alarm.ampm.toUpperCase()}`,
+                sound: "netflix.mp3"
+            },
+            trigger: {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                date: alarmDate
+            },
         });
     }
 
-    useEffect(() => {
-        registerForPushNotificationsAsync().then(token => token && setExpoPushToken(token));
-        
-        // Schedule notifications for all alarms
-        alarms.forEach(alarm => scheduleAlarmNotification(alarm));
-        
-        notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-            setNotification(notification);
-          });
-      
-          responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-            console.log(response);
-          });
-      
-          return () => {
-            notificationListener.current &&
-              Notifications.removeNotificationSubscription(notificationListener.current);
-            responseListener.current &&
-              Notifications.removeNotificationSubscription(responseListener.current);
-          };
-    }, [])
+    // async function playSound() {
+    //     const { sound } = await Audio.Sound.createAsync(require('../assets/sounds/netflix.mp3'));
+    //     setSound(sound);
+    //     await sound.playAsync();
+    // }
 
+    // async function playSound() {
+    //     const now = Date.now();
+    //     console.log("[DEBUG] playSound() called at", now);
+    //     // Play max once every 2 seconds (tweak as needed)
+    //     if (now - lastSoundPlayedAt.current < 2000) {
+    //         console.log("[DEBUG] playSound debounced: not playing sound");
+    //       return;
+    //     }
+    //     lastSoundPlayedAt.current = now;
+      
+    //     // Stop previous sound
+    //     if (soundRef.current) {
+    //       try {
+    //         await soundRef.current.stopAsync();
+    //         await soundRef.current.unloadAsync();
+    //       } catch (e) {}
+    //       soundRef.current = null;
+    //     }
+    //     const { sound } = await Audio.Sound.createAsync(require('../assets/sounds/netflix.mp3'));
+    //     soundRef.current = sound;
+    //     await sound.playAsync();
+    //     console.log("[DEBUG] Sound played at", now);
+    //   }
+
+
+    // async function playSoundEndlessly() {
+    //     // Stop and unload any existing sound first
+    //     if (soundRef.current) {
+    //         try {
+    //             await soundRef.current.stopAsync();
+    //             await soundRef.current.unloadAsync();
+    //         } catch (e) { /* handle error if any */ }
+    //         soundRef.current = null;
+    //     }
+    //     // Load the sound
+    //     const { sound: newSound } = await Audio.Sound.createAsync(
+    //         require('../assets/sounds/ringtone.mp3')
+    //     );
+    //     await newSound.setIsLoopingAsync(true);
+    //     await newSound.playAsync();
+    //     soundRef.current = newSound;
+    // }
+    
+    // async function stopSound() {
+    //     if (soundRef.current) {
+    //         try {
+    //             await soundRef.current.stopAsync();
+    //             await soundRef.current.unloadAsync();
+    //         } catch (e) {}
+    //         soundRef.current = null;
+    //     }
+    // }
+ 
     return (
         <SafeAreaView style={globalStyles.safeArea}>
             <ScrollView style={globalStyles.scrollView}>
                 <View style={globalStyles.subHeaderBar}>
                     <Text style={globalStyles.subHeaderText}>Alarm</Text>
+                    
                     <Pressable onPress={() => router.push('/settings')}>
                         <Ionicons 
                             name="menu-outline"
@@ -131,6 +160,9 @@ export default function HomeScreen() {
                         />
                     </Pressable>
                 </View>
+                <Button title="Go to testNFC" onPress={()=> router.push('/testRun/testNFC')}></Button>
+                {/* <Button title="Go to testPushNoti" onPress={()=> router.push('/testRun/testPushNoti')}></Button> */}
+                <Button title="Go to testGesture" onPress={()=> router.push('/testRun/testGesture')}></Button>
                 {alarms.length === 0 ? (
                     <Text>No alarms yet.</Text>
                 ) : (
@@ -150,42 +182,6 @@ export default function HomeScreen() {
     )
 }
 
-async function registerForPushNotificationsAsync() {
-    let token;
-
-    if (Device.isDevice) {
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        let finalStatus = existingStatus;
-        if (existingStatus !== 'granted') {
-          const { status } = await Notifications.requestPermissionsAsync();
-          finalStatus = status;
-        }
-        if (finalStatus !== 'granted') {
-          alert('Failed to get push token for push notification!');
-          return;
-        }
-        try {
-          const projectId =
-            Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
-          if (!projectId) {
-            throw new Error('Project ID not found');
-          }
-          token = (
-            await Notifications.getExpoPushTokenAsync({
-              projectId,
-            })
-          ).data;
-          console.log(token);
-        } catch (e) {
-          token = `${e}`;
-        }
-      } else {
-        alert('Must use physical device for Push Notifications');
-      }
-    
-      return token;
-}
-
 type Alarm = {
     id: string;
     hour: number;
@@ -193,34 +189,42 @@ type Alarm = {
     ampm: string;
 }
 
+// Swipe Card Component to the left to show delete button.
+    // Swipe right to cancel event.
+    // Tap somewhere else other than the card to dismiss delete button.
+// Tap on Card Component to bring user to editAlarm screen. ✅
+
+
 const CardComponent = (props: { alarm: Alarm }) => {
     return (
-        <Card style={styles.card}>
-            <Card.Content style={styles.cardContent}>
-                <View>
-                    {/* <Paragraph style={styles.day}>
-                        Mon, Tue
-                    </Paragraph> */}
-                    <Title style={styles.time}>
-                        {`${props.alarm.hour.toString().padStart(2, "0")}:${props.alarm.minute.toString().padStart(2, "0")} ${props.alarm.ampm}`}
-                    </Title>
-                    <Paragraph style={styles.caption}>
-                        Wake up
-                    </Paragraph>
-                    {/* <Paragraph style={styles.caption}>
-                        {obj.caption || "Wake up"}
-                    </Paragraph> */}
-                </View>
-                <Card.Actions>
-                    <Fontisto
-                        name="toggle-on"
-                        size={50}
-                        color="black"
-                        marginRight={-10}
-                    />
-                </Card.Actions>
-            </Card.Content>
-        </Card>
+        <TouchableOpacity onPress={() => router.push({ pathname: '/editAlarm', params: { id: props.alarm.id } })}>
+            <Card style={styles.card}>
+                <Card.Content style={styles.cardContent}>
+                    <View>
+                        {/* <Paragraph style={styles.day}>
+                            Mon, Tue
+                        </Paragraph> */}
+                        <Title style={styles.time}>
+                            {`${props.alarm.hour.toString().padStart(2, "0")}:${props.alarm.minute.toString().padStart(2, "0")} ${props.alarm.ampm}`}
+                        </Title>
+                        <Paragraph style={styles.caption}>
+                            Wake up
+                        </Paragraph>
+                        {/* <Paragraph style={styles.caption}>
+                            {obj.caption || "Wake up"}
+                        </Paragraph> */}
+                    </View>
+                    <Card.Actions>
+                        <Fontisto
+                            name="toggle-on"
+                            size={50}
+                            color="black"
+                            marginRight={-10}
+                        />
+                    </Card.Actions>
+                </Card.Content>
+            </Card>
+        </TouchableOpacity>
     )
 }
 
@@ -262,3 +266,4 @@ const styles = StyleSheet.create({
         transform: [{ scale: 0.9 }],
     },
 })
+
