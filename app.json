@@ -17,7 +17,11 @@
           "NDEF"
         ],
         "NSUserNotificationUsageDescription": "Allow NFC Alarm 2025 to send notifications.",
-         "UIBackgroundModes": ["audio", "fetch", "remote-notification"],
+        "UIBackgroundModes": [
+          "audio",
+          "fetch",
+          "remote-notification"
+        ],
         "NSMicrophoneUsageDescription": "This app does not require microphone access"
       },
       "entitlements": {
@@ -45,14 +49,14 @@
         }
       ],
       "expo-router",
-      ["expo-notifications",
+      [
+        "expo-notifications",
         {
           "sounds": [
             "./assets/sounds/ringtone.mp3",
             "./assets/sounds/netflix.mp3"
           ]
         }
-    
       ],
       "expo-av"
     ],

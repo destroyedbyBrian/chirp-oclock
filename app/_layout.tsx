@@ -1,11 +1,12 @@
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Audio } from 'expo-av';
 import { useAlarmSoundStore } from '../stores/soundStore';
- 
+import NfcManager, {NfcTech} from 'react-native-nfc-manager';
+
 
 export default function Layout() {
     const [notification, setNotification] = useState<Notifications.Notification | undefined>(undefined);  
@@ -13,28 +14,38 @@ export default function Layout() {
     const responseListener = useRef<Notifications.EventSubscription>(); 
 
     const setSoundRef = useAlarmSoundStore(s => s.setSoundRef);
-
+    const isAlarmActive = useAlarmSoundStore(s => s.isAlarmRinging);
+    const setAlarmActive = useAlarmSoundStore(s => s.setIsAlarmRinging)
 
     useEffect(() => {
         requestForPushNotification();
+
+        async () => { await NfcManager.start(); }
     
         // Mount notification handler on initial render
         Notifications.setNotificationHandler({
           handleNotification: async () => ({
             shouldShowAlert: true,
-            shouldPlaySound: false,
+            shouldPlaySound: true,
             shouldSetBadge: true,
           }),
         });
 
         notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
           setNotification(notification);
-          playSoundEndlessly()
+          if (!isAlarmActive) {
+            playSoundEndlessly();
+          }
         });
-    
-        responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-        console.log(response);
+
+        // When the user taps the notification…
+        responseListener.current =
+          Notifications.addNotificationResponseReceivedListener(response => {
+            if (!isAlarmActive) {
+              playSoundEndlessly();
+            }
         });
+
 
         return () => {
             if (notificationListener.current) {
@@ -43,6 +54,7 @@ export default function Layout() {
             if (responseListener.current) {
               Notifications.removeNotificationSubscription(responseListener.current);
             }
+            setAlarmActive(false);
         }
       }, []);
 
@@ -75,10 +87,11 @@ export default function Layout() {
       async function playSoundEndlessly() {
         try {
           const { sound } = await Audio.Sound.createAsync(
-            require('../assets/sounds/netflix.mp3'), 
+            require('../assets/sounds/ringtone.mp3'), 
             { shouldPlay: true, isLooping: true }
           );
           setSoundRef(sound);
+          setAlarmActive(true);
         } catch (e) {
           console.log("Audio error", e);
         }
@@ -138,7 +151,7 @@ export default function Layout() {
                 animationDuration: 500,
             })}
         />
-        {/* <Stack.Screen 
+        <Stack.Screen 
             name="testRun/testPushNoti"
             options={({ route }) => ({
                 title: 'Test Push Notification',
@@ -146,7 +159,7 @@ export default function Layout() {
                 animation: 'simple_push',
                 animationDuration: 500,
             })}
-        /> */}
+        />
         <Stack.Screen 
             name="testRun/testGesture"
             options={({ route }) => ({

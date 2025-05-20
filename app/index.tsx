@@ -6,7 +6,8 @@ import {
     StyleSheet,
     Pressable,
     TouchableOpacity,
-    Button
+    Button, 
+    Modal
 } from "react-native";
 import globalStyles from './styles/globalStyles';
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -17,14 +18,46 @@ import { router } from 'expo-router';
 import { useAlarmsStore } from '../stores/alarmsStore';
 import * as Notifications from 'expo-notifications';
 import { useAlarmSoundStore } from '../stores/soundStore';
+import NfcManager, {NfcTech} from 'react-native-nfc-manager';
 
+
+type Alarm = {
+    id: string;
+    hour: number;
+    minute: number;
+    ampm: string;
+}
 
 export default function HomeScreen() {
     const [newAlarmButtonPressed, setNewAlarmButtonPressed] = useState<boolean>(false);
     const alarms = useAlarmsStore((s) => s.alarms);
 
-    const soundRef = useAlarmSoundStore(s => s.soundRef);
+    const isAlarmActive = useAlarmSoundStore(s => s.isAlarmRinging);
+    const stopAlarmSound = useAlarmSoundStore(s => s.stopAlarmSound);
 
+    const [successfulNFC, setSuccessfulNFC] = useState<boolean>(false);
+
+    const [nfcPromptVisible, setNfcPromptVisible] = useState<boolean>(false);
+    const activeAlarm = alarms.length > 0 ? alarms[0] : undefined;
+
+    const doNfcScan = async () => {
+        try {
+          await NfcManager.cancelTechnologyRequest();
+        } catch {}
+      
+        try {
+            await NfcManager.requestTechnology([NfcTech.Ndef]);
+            await NfcManager.getTag();
+            setSuccessfulNFC(true);
+            // await Notifications.cancelAllScheduledNotificationsAsync();
+            await stopAlarmSound();
+            setNfcPromptVisible(false);   
+        } catch (e) {
+            setSuccessfulNFC(false);
+        } finally {
+            NfcManager.cancelTechnologyRequest();
+        }
+      };
 
     useEffect(() => {
         Notifications.cancelAllScheduledNotificationsAsync().then(() => {
@@ -32,10 +65,15 @@ export default function HomeScreen() {
         });
     }, [])
 
+    useEffect(() => {
+        if (isAlarmActive && !nfcPromptVisible) {
+            setNfcPromptVisible(true);
+        }
+    }, [isAlarmActive]);
+    
     const uniqueAlarms = Array.from(new Map(alarms.map(alarm => [
         `${alarm.hour}:${alarm.minute} ${alarm.ampm}`, alarm
     ])).values());
-
     
     function alarmToMinutes(alarm: Alarm) {
         let hr = alarm.hour;
@@ -80,7 +118,7 @@ export default function HomeScreen() {
                 body: `Alarm for ${alarm.hour.toString().padStart(2, "0")}:${alarm.minute
                 .toString()
                 .padStart(2, "0")} ${alarm.ampm.toUpperCase()}`,
-                // sound: "netflix.mp3"
+                sound: "netflix.mp3"
             },
             trigger: {
                 type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -89,14 +127,35 @@ export default function HomeScreen() {
         });
     }
 
-    async function stopAlarm() {
-        if (soundRef) {
-          await soundRef.stopAsync();
-          await soundRef.unloadAsync();
-          // Optionally reset in store:
-          useAlarmSoundStore.getState().setSoundRef(null);
-        }
-      }
+    // async function scheduleAlarmNotification(alarm: Alarm) {
+    //     const alarmDate = getNextAlarmDate(alarm);
+    //     // Schedule notifications every 2 seconds over 2 minutes (2*60/10 = 12)
+    //     for (let i = 0; i < 12; i++) {
+    //         const triggerDate = new Date(alarmDate.getTime() + i * 2 * 1000);
+    //         await Notifications.scheduleNotificationAsync({
+    //             content: {
+    //                 title: "⏰ Alarm",
+    //                 body: `Alarm for ${alarm.hour.toString().padStart(2, "0")}:${alarm.minute
+    //                     .toString()
+    //                     .padStart(2, "0")} ${alarm.ampm.toUpperCase()} (tap to stop)`,
+    //                 sound: "netflix.mp3"
+    //             },
+    //                 trigger: {
+    //                     type: Notifications.SchedulableTriggerInputTypes.DATE,
+    //                     date: triggerDate
+    //                 },
+    //         });
+    //     }
+    // }
+
+    // async function stopAlarm() {
+    //     if (soundRef) {
+    //       await soundRef.stopAsync();
+    //       await soundRef.unloadAsync();
+    //       // Optionally reset in store:
+    //       useAlarmSoundStore.getState().setSoundRef(null);
+    //     }
+    //   }
 
     return (
         <SafeAreaView style={globalStyles.safeArea}>
@@ -114,7 +173,7 @@ export default function HomeScreen() {
                     </Pressable>
                 </View>
                 <Button title="Go to testNFC" onPress={()=> router.push('/testRun/testNFC')}></Button>
-                {/* <Button title="Go to testPushNoti" onPress={()=> router.push('/testRun/testPushNoti')}></Button> */}
+                <Button title="Go to testNoti" onPress={()=> router.push('/testRun/testPushNoti')}></Button>
                 <Button title="Go to testGesture" onPress={()=> router.push('/testRun/testGesture')}></Button>
                 {alarms.length === 0 ? (
                     <Text>No alarms yet.</Text>
@@ -124,7 +183,26 @@ export default function HomeScreen() {
                     ))
                 )}
             </ScrollView>
-            <Button title="stop Alarm" onPress={() => stopAlarm()} />
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={nfcPromptVisible}
+                onRequestClose={() => setNfcPromptVisible(false)}
+                >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                    <Text style={styles.modalTitle}>Scan NFC Tag</Text>
+                    <Text style={styles.modalSubtitle}>
+                        Hold your phone near the tag to dismiss alarm
+                    </Text>
+                    <Text style={styles.alarmTime}>10:10 AM</Text>
+                    <Pressable style={styles.scanButton} onPress={doNfcScan}>
+                        <Ionicons name="card-outline" size={24} color="#fff" style={{ marginRight: 6 }} />
+                        <Text style={styles.scanButtonLabel}>Scan Now</Text>
+                    </Pressable>
+                    </View>
+                </View>
+            </Modal>  
             <Pressable 
                 onPressIn={() => setNewAlarmButtonPressed(true)}
                 onPressOut={() => setNewAlarmButtonPressed(false)}
@@ -134,13 +212,6 @@ export default function HomeScreen() {
             </Pressable>
         </SafeAreaView>
     )
-}
-
-type Alarm = {
-    id: string;
-    hour: number;
-    minute: number;
-    ampm: string;
 }
 
 // Swipe Card Component to the left to show delete button.
@@ -219,5 +290,63 @@ const styles = StyleSheet.create({
     buttonPressed: {
         transform: [{ scale: 0.9 }],
     },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.44)",
+        justifyContent: "flex-end",
+        paddingBottom: 0,
+      },
+    modalContent: {
+        backgroundColor: "#fff",
+        borderTopLeftRadius: 22,
+        borderTopRightRadius: 22,
+        alignItems: "center",
+        padding: 30,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.18,
+        shadowRadius: 10,
+        elevation: 11,
+    },
+    modalTitle: {
+        fontWeight: '700',
+        fontSize: 22,
+        marginBottom: 4,
+        color: "#222",
+        letterSpacing: 0.3,
+    },
+    modalSubtitle: {
+        fontSize: 15,
+        color: "#888",
+        marginBottom: 18,
+        textAlign: "center"
+    },
+    alarmTime: {
+        fontSize: 18,
+        color: "#007AFF",
+        fontWeight: "600",
+        marginBottom: 20,
+        marginTop: 5
+    },
+    scanButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: "#007AFF",
+        borderRadius: 22,
+        paddingHorizontal: 25,
+        paddingVertical: 11,
+        marginBottom: 13,
+        marginTop: 5,
+        shadowColor: "#007AFF",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.18,
+        shadowRadius: 6,
+        elevation: 2,
+    },
+    scanButtonLabel: {
+        color: "#fff",
+        fontSize: 17,
+        fontWeight: "600"
+    }
 })
 

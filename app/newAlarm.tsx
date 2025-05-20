@@ -2,7 +2,6 @@ import {
     SafeAreaView,
     View,
     Text,
-    StyleSheet,
     Pressable,
     TouchableOpacity,
 } from "react-native";
@@ -23,6 +22,7 @@ import NfcManager, {NfcTech} from 'react-native-nfc-manager';
 
 
 export default function NewAlarmScreen() {
+    const [testNFCButton, setTestNFCButton] = useState<boolean>(false);
     const [successfulNFC, setSuccessfulNFC] = useState<boolean>(false);
 
     const hour = useNewAlarmStore((s) => s.hour);
@@ -44,8 +44,6 @@ export default function NewAlarmScreen() {
           });
         router.push('/');
       };
-
-    const [testNFCButton, setTestNFCButton] = useState<boolean>(false);
 
     useEffect(() => {
         let cancelled = false;

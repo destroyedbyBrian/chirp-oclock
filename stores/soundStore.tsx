@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Audio } from 'expo-av'; // Make sure this is imported
+import { Audio } from 'expo-av'; 
 
 type AlarmSoundStore = {
   soundRef: Audio.Sound | null;
@@ -7,12 +7,21 @@ type AlarmSoundStore = {
 
   isAlarmRinging: boolean;
   setIsAlarmRinging: (value: boolean) => void;
+  stopAlarmSound: () => Promise<void>
 };
 
-export const useAlarmSoundStore = create<AlarmSoundStore>((set) => ({
+export const useAlarmSoundStore = create<AlarmSoundStore>((set, get) => ({
   soundRef: null,
   setSoundRef: (ref) => set({ soundRef: ref }),
 
   isAlarmRinging: false,
   setIsAlarmRinging: (value) => set({ isAlarmRinging: value }),
+  stopAlarmSound: async () => {
+    const { soundRef } = get();            
+    if (soundRef) {
+      await soundRef.stopAsync();
+      await soundRef.unloadAsync();
+      set({ soundRef: null, isAlarmRinging: false });
+    }
+  }
 }));
