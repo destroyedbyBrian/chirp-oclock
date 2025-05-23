@@ -1,4 +1,5 @@
 import { Stack, router } from 'expo-router';
+import { AppState } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
@@ -6,16 +7,19 @@ import Constants from 'expo-constants';
 import { Audio } from 'expo-av';
 import { useAlarmSoundStore } from '../stores/soundStore';
 import NfcManager, {NfcTech} from 'react-native-nfc-manager';
+import { useAppStateStore } from "@/stores/appStateStore";
 
 
 export default function Layout() {
-    const [notification, setNotification] = useState<Notifications.Notification | undefined>(undefined);  
     const notificationListener = useRef<Notifications.EventSubscription>();  
     const responseListener = useRef<Notifications.EventSubscription>(); 
 
     const setSoundRef = useAlarmSoundStore(s => s.setSoundRef);
     const isAlarmActive = useAlarmSoundStore(s => s.isAlarmRinging);
     const setAlarmActive = useAlarmSoundStore(s => s.setIsAlarmRinging)
+
+    const isAppInForeGround = useAppStateStore(s => s.isAppInForeGround);
+    const setIsAppInForeGround = useAppStateStore(s => s.setIsAppInForeGround);
 
     useEffect(() => {
         requestForPushNotification();
@@ -31,8 +35,9 @@ export default function Layout() {
           }),
         });
 
-        notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-          setNotification(notification);
+        notificationListener.current = Notifications.addNotificationReceivedListener(() => {
+          Notifications.cancelAllScheduledNotificationsAsync();
+          Notifications.dismissAllNotificationsAsync();
           if (!isAlarmActive) {
             playSoundEndlessly();
           }
@@ -40,12 +45,24 @@ export default function Layout() {
 
         // When the user taps the notification…
         responseListener.current =
-          Notifications.addNotificationResponseReceivedListener(response => {
+          Notifications.addNotificationResponseReceivedListener(() => {
             if (!isAlarmActive) {
               playSoundEndlessly();
             }
         });
 
+        // Check if app is in Foreground
+        setIsAppInForeGround(AppState.currentState === 'active');
+          const subscription = AppState.addEventListener('change', async (nextState) => {
+          const isForeground = nextState === 'active';
+          setIsAppInForeGround(isForeground);
+      
+          if (isForeground) {
+            // Cancel any pending alarms/alerts
+            await Notifications.cancelAllScheduledNotificationsAsync();
+            await Notifications.dismissAllNotificationsAsync();
+          }
+        });
 
         return () => {
             if (notificationListener.current) {
@@ -54,6 +71,7 @@ export default function Layout() {
             if (responseListener.current) {
               Notifications.removeNotificationSubscription(responseListener.current);
             }
+            subscription.remove();
             setAlarmActive(false);
         }
       }, []);

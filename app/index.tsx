@@ -7,7 +7,7 @@ import {
     Pressable,
     TouchableOpacity,
     Button, 
-    Modal
+    Modal,
 } from "react-native";
 import globalStyles from './styles/globalStyles';
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -15,10 +15,11 @@ import Fontisto from "@expo/vector-icons/Fontisto";
 import { Card, Title, Paragraph } from "react-native-paper";
 import { useState, useEffect } from "react";
 import { router } from 'expo-router';
-import { useAlarmsStore } from '../stores/alarmsStore';
 import * as Notifications from 'expo-notifications';
-import { useAlarmSoundStore } from '../stores/soundStore';
 import NfcManager, {NfcTech} from 'react-native-nfc-manager';
+import { useAlarmsStore } from '../stores/alarmsStore';
+import { useAlarmSoundStore } from '../stores/soundStore';
+import { useAppStateStore } from "@/stores/appStateStore";
 
 
 type Alarm = {
@@ -49,7 +50,9 @@ export default function HomeScreen() {
             await NfcManager.requestTechnology([NfcTech.Ndef]);
             await NfcManager.getTag();
             setSuccessfulNFC(true);
-            // await Notifications.cancelAllScheduledNotificationsAsync();
+            // Multiple alerts
+            await Notifications.cancelAllScheduledNotificationsAsync();
+            Notifications.dismissAllNotificationsAsync();
             await stopAlarmSound();
             setNfcPromptVisible(false);   
         } catch (e) {
@@ -70,7 +73,7 @@ export default function HomeScreen() {
             setNfcPromptVisible(true);
         }
     }, [isAlarmActive]);
-    
+
     const uniqueAlarms = Array.from(new Map(alarms.map(alarm => [
         `${alarm.hour}:${alarm.minute} ${alarm.ampm}`, alarm
     ])).values());
@@ -110,52 +113,43 @@ export default function HomeScreen() {
         return alarmDate;
       }
 
-    async function scheduleAlarmNotification(alarm: Alarm) {
-        const alarmDate = getNextAlarmDate(alarm);
-        await Notifications.scheduleNotificationAsync({
-            content: {
-                title: "⏰ Alarm",
-                body: `Alarm for ${alarm.hour.toString().padStart(2, "0")}:${alarm.minute
-                .toString()
-                .padStart(2, "0")} ${alarm.ampm.toUpperCase()}`,
-                sound: "netflix.mp3"
-            },
-            trigger: {
-                type: Notifications.SchedulableTriggerInputTypes.DATE,
-                date: alarmDate
-            },
-        });
-    }
-
-    // async function scheduleAlarmNotification(alarm: Alarm) {
+    // async function scheduleForeGroundAlarmNotification(alarm: Alarm) {
     //     const alarmDate = getNextAlarmDate(alarm);
-    //     // Schedule notifications every 2 seconds over 2 minutes (2*60/10 = 12)
-    //     for (let i = 0; i < 12; i++) {
-    //         const triggerDate = new Date(alarmDate.getTime() + i * 2 * 1000);
-    //         await Notifications.scheduleNotificationAsync({
-    //             content: {
-    //                 title: "⏰ Alarm",
-    //                 body: `Alarm for ${alarm.hour.toString().padStart(2, "0")}:${alarm.minute
-    //                     .toString()
-    //                     .padStart(2, "0")} ${alarm.ampm.toUpperCase()} (tap to stop)`,
-    //                 sound: "netflix.mp3"
-    //             },
-    //                 trigger: {
-    //                     type: Notifications.SchedulableTriggerInputTypes.DATE,
-    //                     date: triggerDate
-    //                 },
-    //         });
-    //     }
+    //     await Notifications.scheduleNotificationAsync({
+    //         content: {
+    //             title: "⏰ Alarm",
+    //             body: `Alarm for ${alarm.hour.toString().padStart(2, "0")}:${alarm.minute
+    //             .toString()
+    //             .padStart(2, "0")} ${alarm.ampm.toUpperCase()}`,
+    //             sound: "netflix.mp3"
+    //         },
+    //         trigger: {
+    //             type: Notifications.SchedulableTriggerInputTypes.DATE,
+    //             date: alarmDate
+    //         },
+    //     });
     // }
 
-    // async function stopAlarm() {
-    //     if (soundRef) {
-    //       await soundRef.stopAsync();
-    //       await soundRef.unloadAsync();
-    //       // Optionally reset in store:
-    //       useAlarmSoundStore.getState().setSoundRef(null);
-    //     }
-    //   }
+    async function scheduleAlarmNotification(alarm: Alarm) {
+        const alarmDate = getNextAlarmDate(alarm);
+        // Schedule notifications every 2 seconds over 2 minutes (2*60/10 = 12)
+        for (let i = 0; i < 12; i++) {
+            const triggerDate = new Date(alarmDate.getTime() + i * 2 * 1000);
+            await Notifications.scheduleNotificationAsync({
+                content: {
+                    title: "⏰ Alarm",
+                    body: `Alarm for ${alarm.hour.toString().padStart(2, "0")}:${alarm.minute
+                        .toString()
+                        .padStart(2, "0")} ${alarm.ampm.toUpperCase()} (tap to stop)`,
+                    sound: "netflix.mp3"
+                },
+                    trigger: {
+                        type: Notifications.SchedulableTriggerInputTypes.DATE,
+                        date: triggerDate
+                    },
+            });
+        }
+    }
 
     return (
         <SafeAreaView style={globalStyles.safeArea}>
