@@ -17,7 +17,7 @@ import AmPm from "../components/ampmPicker";
 import { useState, useEffect } from "react";
 import { router } from "expo-router";
 import { useNewAlarmStore } from '../stores/newAlarmStore';
-import { useAlarmsStore } from '../stores/alarmsStore';
+import { useAlarmStore } from '../stores/alarmsStore';
 import NfcManager, {NfcTech} from 'react-native-nfc-manager';
 
 
@@ -33,15 +33,15 @@ export default function NewAlarmScreen() {
     const setMinute = useNewAlarmStore((s) => s.setMinute);
     const setAmpm = useNewAlarmStore((s) => s.setAmpm);
 
-    const addAlarm = useAlarmsStore((s) => s.addAlarm);
+    const addAlarm = useAlarmStore((s) => s.addAlarm);
 
     const handleDone = () => {
         addAlarm({
-          id: Date.now().toString(), // simple unique id
-          hour: hour,
-          minute: minute,
-          ampm: ampm,
-          });
+            id: Date.now().toString(), // simple unique id
+            hour: hour,
+            minute: minute,
+            ampm: ampm,
+            });
         router.push('/');
       };
 
@@ -71,8 +71,6 @@ export default function NewAlarmScreen() {
         }
         return () => { cancelled = true; }
     }, [testNFCButton]);
-      
-
 
     return (
         <SafeAreaView style={globalStyles.safeArea}>
@@ -92,6 +90,7 @@ export default function NewAlarmScreen() {
                             style={alarmSettingStyles.saveButton}
                             onPress={() => {
                                 handleDone()
+
                                 router.push('/')
                             }}
                         >Done</Text>

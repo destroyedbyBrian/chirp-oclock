@@ -13,13 +13,20 @@ import globalStyles from './styles/globalStyles';
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Fontisto from "@expo/vector-icons/Fontisto";
 import { Card, Title, Paragraph } from "react-native-paper";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { router } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import NfcManager, {NfcTech} from 'react-native-nfc-manager';
-import { useAlarmsStore } from '../stores/alarmsStore';
+import { useAlarmStore } from '../stores/alarmsStore';
 import { useAlarmSoundStore } from '../stores/soundStore';
 import { useAppStateStore } from "@/stores/appStateStore";
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, {
+    useSharedValue,
+    withTiming,
+    useAnimatedStyle,
+    runOnJS,
+  } from 'react-native-reanimated';
 
 
 type Alarm = {
@@ -31,7 +38,7 @@ type Alarm = {
 
 export default function HomeScreen() {
     const [newAlarmButtonPressed, setNewAlarmButtonPressed] = useState<boolean>(false);
-    const alarms = useAlarmsStore((s) => s.alarms);
+    const alarms = useAlarmStore((s) => s.alarms);
 
     const isAlarmActive = useAlarmSoundStore(s => s.isAlarmRinging);
     const stopAlarmSound = useAlarmSoundStore(s => s.stopAlarmSound);
@@ -73,6 +80,7 @@ export default function HomeScreen() {
             setNfcPromptVisible(true);
         }
     }, [isAlarmActive]);
+
 
     const uniqueAlarms = Array.from(new Map(alarms.map(alarm => [
         `${alarm.hour}:${alarm.minute} ${alarm.ampm}`, alarm
@@ -154,28 +162,28 @@ export default function HomeScreen() {
     return (
         <SafeAreaView style={globalStyles.safeArea}>
             <ScrollView style={globalStyles.scrollView}>
-                <View style={globalStyles.subHeaderBar}>
-                    <Text style={globalStyles.subHeaderText}>Alarm</Text>
-                    
-                    <Pressable onPress={() => router.push('/settings')}>
-                        <Ionicons 
-                            name="menu-outline"
-                            size={32}
-                            color="black"
-                            marginTop={-4}
-                        />
-                    </Pressable>
-                </View>
-                <Button title="Go to testNFC" onPress={()=> router.push('/testRun/testNFC')}></Button>
-                <Button title="Go to testNoti" onPress={()=> router.push('/testRun/testPushNoti')}></Button>
-                <Button title="Go to testGesture" onPress={()=> router.push('/testRun/testGesture')}></Button>
-                {alarms.length === 0 ? (
-                    <Text>No alarms yet.</Text>
-                ) : (
-                    sortedAlarms.map((alarm: Alarm) => (
-                        <CardComponent alarm={alarm} key={alarm.id} />
-                    ))
-                )}
+                        <View style={globalStyles.subHeaderBar}>
+                            <Text style={globalStyles.subHeaderText}>Alarm</Text>
+                            
+                            <Pressable onPress={() => router.push('/settings')}>
+                                <Ionicons 
+                                    name="menu-outline"
+                                    size={32}
+                                    color="black"
+                                    marginTop={-4}
+                                />
+                            </Pressable>
+                        </View>
+                        <Button title="Go to testNFC" onPress={()=> router.push('/testRun/testNFC')}></Button>
+                        <Button title="Go to testNoti" onPress={()=> router.push('/testRun/testPushNoti')}></Button>
+                        <Button title="Go to testGesture" onPress={()=> router.push('/testRun/testGesture')}></Button>
+                        {alarms.length === 0 ? (
+                            <Text>No alarms yet.</Text>
+                        ) : (
+                            sortedAlarms.map((alarm: Alarm) => (
+                                <CardComponent alarm={alarm} key={alarm.id} />
+                            ))
+                        )}
             </ScrollView>
             <Modal
                 animationType="slide"
@@ -208,42 +216,81 @@ export default function HomeScreen() {
     )
 }
 
-// Swipe Card Component to the left to show delete button.
-    // Swipe right to cancel event.
-    // Tap somewhere else other than the card to dismiss delete button.
-// Tap on Card Component to bring user to editAlarm screen. ✅
+const RENDER_POSITION = 0;
+
+function CardComponent ({ alarm }: { alarm: Alarm }) {
+    const triggerDeleteIcon = useSharedValue(false);
+    const position = useSharedValue(RENDER_POSITION);
+    const deleteAlarm = useAlarmStore((s) => s.deleteAlarm);
+    const deletedRef = useRef<Boolean>(false);
+
+    const panGesture = Gesture.Pan()
+        .onUpdate((e) => {
+            'worklet';
+            if (e.translationX < - 150 && !triggerDeleteIcon.value && !deletedRef.current) {
+                triggerDeleteIcon.value = true;
+                deletedRef.current = true;
+                runOnJS(deleteAlarm)(alarm.id)
+                // runOnJS(() => {
+                //     deleteAlarm(alarm.id)
+                // })
+            }
+            if (e.translationX > 100) {
+                e.translationX = withTiming(RENDER_POSITION, { duration: 2000 });
+            }
+            position.value = RENDER_POSITION + e.translationX;
+        })
+        .onEnd((e) => {
+            const limit = RENDER_POSITION - 150;
+            // Once card component passes a certain point to the left
+            if (position.value < limit) {
+                triggerDeleteIcon.value = true;
+            } else {
+                position.value = withTiming(RENDER_POSITION, { duration: 100 })
+                triggerDeleteIcon.value = false;
+            }
+        })
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: position.value }],
+    }));
 
 
-const CardComponent = (props: { alarm: Alarm }) => {
     return (
-        <TouchableOpacity onPress={() => router.push({ pathname: '/editAlarm', params: { id: props.alarm.id } })}>
-            <Card style={styles.card}>
-                <Card.Content style={styles.cardContent}>
-                    <View>
-                        {/* <Paragraph style={styles.day}>
-                            Mon, Tue
-                        </Paragraph> */}
-                        <Title style={styles.time}>
-                            {`${props.alarm.hour.toString().padStart(2, "0")}:${props.alarm.minute.toString().padStart(2, "0")} ${props.alarm.ampm}`}
-                        </Title>
-                        <Paragraph style={styles.caption}>
-                            Wake up
-                        </Paragraph>
-                        {/* <Paragraph style={styles.caption}>
-                            {obj.caption || "Wake up"}
-                        </Paragraph> */}
-                    </View>
-                    <Card.Actions>
-                        <Fontisto
-                            name="toggle-on"
-                            size={50}
-                            color="black"
-                            marginRight={-10}
-                        />
-                    </Card.Actions>
-                </Card.Content>
-            </Card>
-        </TouchableOpacity>
+        <GestureHandlerRootView>
+            <GestureDetector gesture={panGesture}>
+                <Animated.View style={[animatedStyle, styles.card]}>
+                    <TouchableOpacity onPress={() => router.push({ pathname: '/editAlarm', params: { id: alarm.id } })}>
+                    <Card style={styles.card}>
+                        <Card.Content style={styles.cardContent}>
+                            <View>
+                                {/* <Paragraph style={styles.day}>
+                                    Mon, Tue
+                                </Paragraph> */}
+                                <Title style={styles.time}>
+                                    {`${alarm.hour.toString().padStart(2, "0")}:${alarm.minute.toString().padStart(2, "0")} ${alarm.ampm}`} 
+                                </Title>
+                                <Paragraph style={styles.caption}>
+                                    Wake up
+                                </Paragraph>
+                                {/* <Paragraph style={styles.caption}>
+                                    {obj.caption || "Wake up"}
+                                </Paragraph> */}
+                            </View>
+                            <Card.Actions>
+                                <Fontisto
+                                    name="toggle-on"
+                                    size={50}
+                                    color="black"
+                                    marginRight={-10}
+                                />
+                            </Card.Actions>
+                        </Card.Content>
+                    </Card>
+                    </TouchableOpacity>
+                </Animated.View>
+            </GestureDetector>
+        </GestureHandlerRootView>
     )
 }
 
@@ -341,6 +388,12 @@ const styles = StyleSheet.create({
         color: "#fff",
         fontSize: 17,
         fontWeight: "600"
-    }
+    }, 
+    delete: {
+        backgroundColor: 'red',
+        overflow: 'hidden',
+        position: 'absolute',
+        right: 0
+    },
 })
 
