@@ -34,11 +34,13 @@ type Alarm = {
     hour: number;
     minute: number;
     ampm: string;
+    notificationIdArray?: string[];
 }
 
 export default function HomeScreen() {
     const [newAlarmButtonPressed, setNewAlarmButtonPressed] = useState<boolean>(false);
     const alarms = useAlarmStore((s) => s.alarms);
+    const notificationIds = useAlarmStore((s) => s.notificationIdArray)
 
     const isAlarmActive = useAlarmSoundStore(s => s.isAlarmRinging);
     const stopAlarmSound = useAlarmSoundStore(s => s.stopAlarmSound);
@@ -138,12 +140,15 @@ export default function HomeScreen() {
     //     });
     // }
 
+    // let notificationIdArray: string[] = [];
+
     async function scheduleAlarmNotification(alarm: Alarm) {
         const alarmDate = getNextAlarmDate(alarm);
+        const notificationIds = [];
         // Schedule notifications every 2 seconds over 2 minutes (2*60/10 = 12)
         for (let i = 0; i < 12; i++) {
             const triggerDate = new Date(alarmDate.getTime() + i * 2 * 1000);
-            await Notifications.scheduleNotificationAsync({
+            const notificationId = await Notifications.scheduleNotificationAsync({
                 content: {
                     title: "⏰ Alarm",
                     body: `Alarm for ${alarm.hour.toString().padStart(2, "0")}:${alarm.minute
@@ -151,12 +156,16 @@ export default function HomeScreen() {
                         .padStart(2, "0")} ${alarm.ampm.toUpperCase()} (tap to stop)`,
                     sound: "netflix.mp3"
                 },
-                    trigger: {
-                        type: Notifications.SchedulableTriggerInputTypes.DATE,
-                        date: triggerDate
-                    },
+                trigger: {
+                    type: Notifications.SchedulableTriggerInputTypes.DATE,
+                    date: triggerDate
+                },
             });
+            notificationIds.push(notificationId);
         }
+        // Update the alarm with its notification IDs
+        const updatedAlarm = { ...alarm, notificationIdArray: notificationIds };
+        useAlarmStore.getState().updateAlarm(updatedAlarm);
     }
 
     return (
@@ -164,7 +173,7 @@ export default function HomeScreen() {
             <ScrollView style={globalStyles.scrollView}>
                         <View style={globalStyles.subHeaderBar}>
                             <Text style={globalStyles.subHeaderText}>Alarm</Text>
-                            
+                            <Text>Number of alarms: {alarms.length}</Text>
                             <Pressable onPress={() => router.push('/settings')}>
                                 <Ionicons 
                                     name="menu-outline"
@@ -224,16 +233,18 @@ function CardComponent ({ alarm }: { alarm: Alarm }) {
     const deleteAlarm = useAlarmStore((s) => s.deleteAlarm);
     const deletedRef = useRef<Boolean>(false);
 
+    const handleData = (id: string) => {
+        Notifications.cancelScheduledNotificationAsync(id);
+    }
+
     const panGesture = Gesture.Pan()
         .onUpdate((e) => {
             'worklet';
             if (e.translationX < - 150 && !triggerDeleteIcon.value && !deletedRef.current) {
                 triggerDeleteIcon.value = true;
                 deletedRef.current = true;
-                runOnJS(deleteAlarm)(alarm.id)
-                // runOnJS(() => {
-                //     deleteAlarm(alarm.id)
-                // })
+                runOnJS(handleData)(alarm.id);
+                runOnJS(deleteAlarm)(alarm.id);
             }
             if (e.translationX > 100) {
                 e.translationX = withTiming(RENDER_POSITION, { duration: 2000 });
@@ -255,7 +266,6 @@ function CardComponent ({ alarm }: { alarm: Alarm }) {
         transform: [{ translateX: position.value }],
     }));
 
-
     return (
         <GestureHandlerRootView>
             <GestureDetector gesture={panGesture}>
@@ -276,6 +286,15 @@ function CardComponent ({ alarm }: { alarm: Alarm }) {
                                 {/* <Paragraph style={styles.caption}>
                                     {obj.caption || "Wake up"}
                                 </Paragraph> */}
+                                {/* {alarm.notificationIdArray && alarm.notificationIdArray.length > 0 && (
+                                    <View style={styles.notificationIds}>
+                                        {alarm.notificationIdArray.map((id, index) => (
+                                            <Text key={id} style={styles.notificationId}>
+                                                Notification {index + 1}: {id}
+                                            </Text>
+                                        ))}
+                                    </View>
+                                )} */}
                             </View>
                             <Card.Actions>
                                 <Fontisto
@@ -394,6 +413,14 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         position: 'absolute',
         right: 0
+    },
+    notificationIds: {
+        marginTop: 8,
+    },
+    notificationId: {
+        fontSize: 12,
+        color: '#666',
+        marginBottom: 2,
     },
 })
 
