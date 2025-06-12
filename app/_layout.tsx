@@ -10,6 +10,7 @@ import NfcManager, {NfcTech} from 'react-native-nfc-manager';
 import { useAppStateStore } from "@/stores/appStateStore";
 import { zustandStorage } from '@/storage/mmkvStorage';
 import { useNfcStore } from '@/stores/nfcStore';
+import { STORAGE_KEYS } from '../storage/storageKeys';
 
 
 export default function Layout() {
@@ -78,7 +79,7 @@ export default function Layout() {
             // }, 250);
 
             setTimeout(() => {
-              const alarmDue = zustandStorage.getItem('next-alarm-due');
+              const alarmDue = zustandStorage.getItem(STORAGE_KEYS.NEXT_ALARM_DUE);
               if (alarmDue) {
                 const dueDate = new Date(alarmDue.toString());
                 // Only show modal if alarm is due within the last 5 minutes and not already handled
@@ -88,7 +89,7 @@ export default function Layout() {
                   setNfcPromptVisible(true);
                 } else {
                   // If alarm is past due by more than 5 minutes, clear it
-                  zustandStorage.removeItem('next-alarm-due');
+                  zustandStorage.removeItem(STORAGE_KEYS.NEXT_ALARM_DUE);
                 }
               }
             }, 200)
