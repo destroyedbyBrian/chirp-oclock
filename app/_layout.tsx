@@ -8,6 +8,8 @@ import { Audio } from 'expo-av';
 import { useAlarmSoundStore } from '../stores/soundStore';
 import NfcManager, {NfcTech} from 'react-native-nfc-manager';
 import { useAppStateStore } from "@/stores/appStateStore";
+import { zustandStorage } from '@/storage/mmkvStorage';
+import { useNfcStore } from '@/stores/nfcStore';
 
 
 export default function Layout() {
@@ -20,6 +22,7 @@ export default function Layout() {
 
     const isAppInForeGround = useAppStateStore(s => s.isAppInForeGround);
     const setIsAppInForeGround = useAppStateStore(s => s.setIsAppInForeGround);
+    const setNfcPromptVisible = useNfcStore(s => s.setNfcPromptVisible);
 
     useEffect(() => {
         requestForPushNotification();
@@ -32,6 +35,7 @@ export default function Layout() {
             shouldShowAlert: true,
             shouldPlaySound: true,
             shouldSetBadge: true,
+            shouldShowBanner: true
           }),
         });
 
@@ -44,10 +48,14 @@ export default function Layout() {
         });
 
         // When the user taps the notification…
-        responseListener.current =
-          Notifications.addNotificationResponseReceivedListener(() => {
+        responseListener.current = Notifications.addNotificationResponseReceivedListener(() => {
+            // Only play sound if alarm is not already active
             if (!isAlarmActive) {
               playSoundEndlessly();
+            }
+            // Show NFC prompt if not already visible
+            if (!useNfcStore.getState().nfcPromptVisible) {
+              setNfcPromptVisible(true);
             }
         });
 
@@ -61,6 +69,29 @@ export default function Layout() {
             // Cancel any pending alarms/alerts
             await Notifications.cancelAllScheduledNotificationsAsync();
             await Notifications.dismissAllNotificationsAsync();
+
+            // setTimeout(() => {
+            //   const { isAlarmRinging } = useAlarmSoundStore.getState();
+            //   if (isAlarmRinging) {
+            //     useAlarmSoundStore.getState().setIsAlarmRinging(true);
+            //   }
+            // }, 250);
+
+            setTimeout(() => {
+              const alarmDue = zustandStorage.getItem('next-alarm-due');
+              if (alarmDue) {
+                const dueDate = new Date(alarmDue.toString());
+                // Only show modal if alarm is due within the last 5 minutes and not already handled
+                const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+                if (dueDate >= fiveMinutesAgo && dueDate <= new Date() && !isAlarmActive) {
+                  useAlarmSoundStore.getState().setIsAlarmRinging(true);
+                  setNfcPromptVisible(true);
+                } else {
+                  // If alarm is past due by more than 5 minutes, clear it
+                  zustandStorage.removeItem('next-alarm-due');
+                }
+              }
+            }, 200)
           }
         });
 
@@ -102,8 +133,16 @@ export default function Layout() {
         }
       }
 
+      // Does not trigger when app is backgrounded
       async function playSoundEndlessly() {
         try {
+          // Stop any existing sound first
+          const currentSound = useAlarmSoundStore.getState().soundRef;
+          if (currentSound) {
+            await currentSound.stopAsync();
+            await currentSound.unloadAsync();
+          }
+
           const { sound } = await Audio.Sound.createAsync(
             require('../assets/sounds/ringtone.mp3'), 
             { shouldPlay: true, isLooping: true }

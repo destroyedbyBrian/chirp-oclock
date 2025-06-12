@@ -17,7 +17,6 @@ import { HourPicker, MinutePicker } from "../components/timePicker";
 import AmPm from "../components/ampmPicker";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAlarmStore } from '../stores/alarmsStore';
-import { useNewAlarmStore } from '../stores/newAlarmStore';
 import NfcManager, {NfcTech} from 'react-native-nfc-manager';
 
 
@@ -26,17 +25,11 @@ import NfcManager, {NfcTech} from 'react-native-nfc-manager';
 export default function EditAlarmScreen() { 
     const [testNFCButton, setTestNFCButton] = useState<boolean>(false);
     const [successfulNFC, setSuccessfulNFC] = useState<boolean>(false);
+    const [hour, setHour] = useState<number>(7);
+    const [minute, setMinute] = useState<number>(0);
+    const [ampm, setAmpm] = useState<string>('AM');
 
-    const { id } = useLocalSearchParams<{ id: string }>()
-
-    const hour = useNewAlarmStore((s) => s.hour);
-    const minute = useNewAlarmStore((s) => s.minute);
-    const ampm = useNewAlarmStore((s) => s.ampm);
-
-    const setHour = useNewAlarmStore((s) => s.setHour);
-    const setMinute = useNewAlarmStore((s) => s.setMinute);
-    const setAmpm = useNewAlarmStore((s) => s.setAmpm);
-
+    const { id } = useLocalSearchParams<{ id: string }>();
     const updateAlarm = useAlarmStore((s) => s.updateAlarm);
 
     const handleDone = () => {
@@ -86,27 +79,23 @@ export default function EditAlarmScreen() {
                         size={24}
                         color="black"
                         style={alarmSettingStyles.cancelButton}
-                        // onPress={() => router.back()}
                         onPress={() => router.push('/')}
                     />
                     <Text style={[globalStyles.subHeaderText, {fontSize: 24, marginLeft: 24}]}>Edit Alarm</Text>
                     <Pressable>
                         <Text 
                             style={alarmSettingStyles.saveButton}
-                            onPress={() => {
-                                handleDone()
-                                router.push('/')
-                            }}
+                            onPress={handleDone}
                         >Done</Text>
                     </Pressable>
                 </View>
                 <Text style={alarmSettingStyles.subHeader2}>Ring in 7hours: 24 minutes</Text>
                 <Card style={alarmSettingStyles.cardContainer1}>
                     <Card.Content style={alarmSettingStyles.cardContent1}>
-                        <HourPicker onHourChange={setHour} />
+                        <HourPicker hour={hour} onHourChange={setHour} />
                         <Text style={alarmSettingStyles.semiCollen}>:</Text>
-                        <MinutePicker onMinuteChange={setMinute} />
-                        <AmPm onAmpmChange={setAmpm} />
+                        <MinutePicker minute={minute} onMinuteChange={setMinute} />
+                        <AmPm ampm={ampm} onAmpmChange={setAmpm} />
                     </Card.Content>
                 </Card>
                 <Card style={alarmSettingStyles.cardContainer2}>

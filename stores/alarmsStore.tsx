@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { zustandStorage } from '../storage/mmkvStorage'
+import { STORAGE_KEYS } from '../storage/storageKeys';
 import * as Notifications from 'expo-notifications';
 
 export type Alarm = {
@@ -14,17 +15,16 @@ export type Alarm = {
 
 type AlarmState = {
   alarms: Alarm[];
-  notificationIdArray: string[];
   addAlarm: (alarm: Alarm) => void;
   updateAlarm: (updatedAlarm: Alarm) => void;
   deleteAlarm: (id: string) => void;
+  updateAlarmNotifications: (id: string, notificationIds: string[]) => void
 };
 
 export const useAlarmStore = create<AlarmState>()(
   persist(
     (set) => ({
       alarms: [],
-      notificationIdArray: [],
       addAlarm: (alarm) =>
         set((state) => ({
           alarms: [...state.alarms, alarm],
@@ -56,10 +56,18 @@ export const useAlarmStore = create<AlarmState>()(
             alarms: state.alarms.filter(alarm => alarm.id !== id),
           };
         }),
+        updateAlarmNotifications: (id: string, notificationIds: string[]) => 
+        set((state) => ({
+            alarms: state.alarms.map((alarm) =>
+                alarm.id === id 
+                    ? { ...alarm, notificationIdArray: notificationIds }
+                    : alarm
+            ),
+        })),
     }),
     {
-      name: 'alarm-storage',
+      name: STORAGE_KEYS.ALARMS_STORE,
       storage: zustandStorage,
     }
   )
-)
+);

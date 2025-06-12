@@ -1,24 +1,20 @@
 import React, { useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import moment from "moment-timezone";
-import { useNewAlarmStore } from '../stores/newAlarmStore';
-
 
 const AMPM_ITEM_HEIGHT = 80;  // Smaller than hour/minute
 const AMPM_VISIBLE_ITEMS = 2;
 
 type AmPmProps = {
+    ampm: string;
     onAmpmChange: (ampm: string) => void;
 };
 
-const AmPm: React.FC<AmPmProps>  = () => {
+const AmPm: React.FC<AmPmProps> = ({ ampm, onAmpmChange }) => {
     const scrollRef = useRef<ScrollView>(null);
     const [scrollPosition, setScrollPosition] = useState<number>(0);
     const choices = ["am", "pm"];
     const infiniteChoices = [...choices, ...choices, ...choices];
-
-    const ampm = useNewAlarmStore((s) => s.ampm);
-    const setAmpm = useNewAlarmStore((s) => s.setAmpm);
 
     const handleLayout = () => {
         const currentTime = moment();
@@ -27,7 +23,7 @@ const AmPm: React.FC<AmPmProps>  = () => {
         const safeInitialIndex = initialIndex === -1 ? 0 : initialIndex;
         const y = (choices.length + safeInitialIndex - Math.floor(AMPM_VISIBLE_ITEMS / 2)) * AMPM_ITEM_HEIGHT;
         scrollRef.current?.scrollTo({ y, animated: false });
-        setAmpm(ampm);
+        onAmpmChange(ampm);
         setScrollPosition(y);
     }
 
@@ -39,7 +35,7 @@ const AmPm: React.FC<AmPmProps>  = () => {
         const centerIndex = Math.round(offsetY / AMPM_ITEM_HEIGHT) + Math.floor(AMPM_VISIBLE_ITEMS / 2);
         const trueIndex = centerIndex % totalRows;
         const choiceIndex = trueIndex % choices.length;
-        setAmpm(choices[choiceIndex]);
+        onAmpmChange(choices[choiceIndex]);
     };
 
     const handleMomentumScrollEnd = (event: any) => {
