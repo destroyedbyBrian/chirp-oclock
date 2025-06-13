@@ -18,9 +18,10 @@ import AmPm from "../components/ampmPicker";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAlarmStore } from '../stores/alarmsStore';
 import NfcManager, {NfcTech} from 'react-native-nfc-manager';
+import * as Notifications from "expo-notifications";
+import { zustandStorage } from "../storage/mmkvStorage";
+import { STORAGE_KEYS } from '../storage/storageKeys';
 
-
-// Delete button at the bottom of the screen
 
 export default function EditAlarmScreen() { 
     const [testNFCButton, setTestNFCButton] = useState<boolean>(false);
@@ -31,6 +32,28 @@ export default function EditAlarmScreen() {
 
     const { id } = useLocalSearchParams<{ id: string }>();
     const updateAlarm = useAlarmStore((s) => s.updateAlarm);
+    const deleteAlarm = useAlarmStore((s) => s.deleteAlarm);
+
+    const handleDeletedAlarmData = async (id: string) => {
+        // Get the alarm being deleted to access its notification IDs
+        const alarmToDelete = useAlarmStore.getState().alarms.find((alarm) => alarm.id === id);
+        if (alarmToDelete?.notificationIdArray) {
+            // Cancel all notifications for this alarm
+            await Promise.all(
+                alarmToDelete.notificationIdArray.map((notificationId) =>
+                    Notifications.cancelScheduledNotificationAsync(notificationId)
+                )
+            );
+        }
+        // Also clear the next alarm due storage
+        zustandStorage.removeItem(STORAGE_KEYS.NEXT_ALARM_DUE);
+    };
+
+    const handleDelete = async () => {
+        await handleDeletedAlarmData(id);
+        deleteAlarm(id);
+        router.push('/');
+    };
 
     const handleDone = () => {
         updateAlarm({
@@ -165,7 +188,19 @@ export default function EditAlarmScreen() {
                         </TouchableOpacity>
                     </Card.Content>
                 </Card>
-                <Text>Scan successful:{successfulNFC ? "true" : "false"}</Text>
+                <TouchableOpacity 
+                    onPress={handleDelete}
+                    style={{
+                        backgroundColor: '#FF3B30',
+                        marginHorizontal: 16,
+                        marginTop: 24,
+                        padding: 16,
+                        borderRadius: 12,
+                        alignItems: 'center'
+                    }}
+                >
+                    <Text style={{ color: 'white', fontSize: 17, fontWeight: '600' }}>Delete Alarm</Text>
+                </TouchableOpacity>
             </View>
         </SafeAreaView>
     )

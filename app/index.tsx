@@ -438,7 +438,6 @@ function CardComponent({ alarm }: { alarm: AlarmWithNextDue }) {
         toggleAlarm(id, newEnabledState);
     }
 
-
     return (
         <GestureHandlerRootView>
             <GestureDetector gesture={panGesture}>

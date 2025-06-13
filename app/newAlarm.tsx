@@ -160,7 +160,7 @@ export default function NewAlarmScreen() {
                         </TouchableOpacity>
                     </Card.Content>
                 </Card>
-                <Text>Scan successful:{successfulNFC ? "true" : "false"}</Text>
+                {/* <Text>Scan successful:{successfulNFC ? "true" : "false"}</Text> */}
             </View>
         </SafeAreaView>
     )
