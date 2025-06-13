@@ -71,13 +71,6 @@ export default function Layout() {
             await Notifications.cancelAllScheduledNotificationsAsync();
             await Notifications.dismissAllNotificationsAsync();
 
-            // setTimeout(() => {
-            //   const { isAlarmRinging } = useAlarmSoundStore.getState();
-            //   if (isAlarmRinging) {
-            //     useAlarmSoundStore.getState().setIsAlarmRinging(true);
-            //   }
-            // }, 250);
-
             setTimeout(() => {
               const alarmDue = zustandStorage.getItem(STORAGE_KEYS.NEXT_ALARM_DUE);
               if (alarmDue) {

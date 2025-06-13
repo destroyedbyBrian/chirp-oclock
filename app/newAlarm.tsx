@@ -30,10 +30,11 @@ export default function NewAlarmScreen() {
 
     const handleDone = () => {
         addAlarm({
-            id: Date.now().toString(), // simple unique id
+            id: Date.now().toString(), 
             hour: hour,
             minute: minute,
             ampm: ampm,
+            enabled: true, 
         });
         router.push('/');
     };

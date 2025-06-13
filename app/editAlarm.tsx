@@ -38,6 +38,7 @@ export default function EditAlarmScreen() {
             hour: hour,
             minute: minute,
             ampm: ampm,
+            enabled: true,
         });
         router.push('/');
     }

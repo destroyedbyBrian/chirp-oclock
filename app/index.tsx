@@ -42,8 +42,11 @@ type Alarm = {
     minute: number;
     ampm: string;
     notificationIdArray?: string[];
+    enabled: boolean;
 };
-type AlarmWithNextDue = Alarm & { nextDue: Date };
+type AlarmWithNextDue = Alarm & { 
+    nextDue: Date ;
+};
 
 function alarmCorePropsEqual(a: Alarm, b: Alarm) {
     // Add every "user controlled" property, but *not* notificationIdArray
@@ -197,8 +200,11 @@ export default function HomeScreen() {
         // (ANS + QN) newly updated type, why not just use that type from the start? 
             // (ANS) its reactive, notifications are cancelled and scheduled again, now the alarm is set for tmrw instead of later today. 
     async function scheduleAlarmNotification(alarm: AlarmWithNextDue) {
-        // (QN) Why am I cancelling all the scheduled notifications for one alarm?
-            // (ANS) Prevent duplicates of old notifications
+        // Don't schedule if alarm is disabled
+        if (!alarm.enabled) {
+            return;
+        }
+        // Cancel any existing notifications first
         if (alarm.notificationIdArray) {
             for (const notificationId of alarm.notificationIdArray) {
                 await Notifications.cancelScheduledNotificationAsync(notificationId);
@@ -239,12 +245,12 @@ export default function HomeScreen() {
         }));
         
         useAlarmStore.getState().updateAlarmNotifications(alarm.id, notificationIds);
-
     }    
     
     // State of prevSortedAlarmsRef tracked to be used after re-render to be compared with the newly sorted alarm
     const prevSortedAlarmsRef = useRef<AlarmWithNextDue[] | null>(null);
     useEffect(() => {
+        let isSubscribed = true;  // For cleanup
         const prevAlarms = prevSortedAlarmsRef.current || [];
         const currentAlarms = sortedAlarms;
 
@@ -260,14 +266,47 @@ export default function HomeScreen() {
             return prev && !alarmCorePropsEqual(prev, ca);
         });
 
-        const hasMeaningfulChanges = addedOrDeleted || modified;
+        // Check if any alarm's enabled state changed
+        const enabledStateChanged = currentAlarms.some((ca) => {
+            const prev = prevAlarms.find((pa) => pa.id === ca.id);
+            return prev && prev.enabled !== ca.enabled;
+        });
 
-        if (hasMeaningfulChanges) {
-            currentAlarms.forEach((alarm) => {
-                scheduleAlarmNotification(alarm);
-            });
-        } 
+        const hasMeaningfulChanges = addedOrDeleted || modified || enabledStateChanged;
+
+        if (hasMeaningfulChanges && isSubscribed) {
+            
+            // First, cancel all existing notifications
+            const cancelAllNotifications = async () => {
+                try {
+                    await Notifications.cancelAllScheduledNotificationsAsync();
+                } catch (error) {
+                    console.error('Error cancelling notifications:', error);
+                }
+            };
+
+            // Then handle each alarm
+            const updateNotifications = async () => {
+                await cancelAllNotifications();
+                
+                // Only schedule notifications for enabled alarms
+                for (const alarm of currentAlarms) {
+                    if (alarm.enabled) {
+                        await scheduleAlarmNotification(alarm);
+                    } else {
+                    }
+                }
+            };
+
+            updateNotifications();
+        }
+
         prevSortedAlarmsRef.current = currentAlarms;
+
+        // Cleanup function
+        return () => {
+            isSubscribed = false;
+        };
     }, [sortedAlarms]);
 
     return (
@@ -392,6 +431,14 @@ function CardComponent({ alarm }: { alarm: AlarmWithNextDue }) {
         transform: [{ translateX: position.value }],
     }));
 
+    const toggleAlarm = useAlarmStore((s) => s.toggleAlarm);
+    const toggleOnOff = (id: string) => {
+        // Pass the opposite of current enabled state
+        const newEnabledState = !alarm.enabled;
+        toggleAlarm(id, newEnabledState);
+    }
+
+
     return (
         <GestureHandlerRootView>
             <GestureDetector gesture={panGesture}>
@@ -423,10 +470,11 @@ function CardComponent({ alarm }: { alarm: AlarmWithNextDue }) {
                                 </View>
                                 <Card.Actions>
                                     <Fontisto
-                                        name="toggle-on"
+                                        name={alarm.enabled ? "toggle-on": "toggle-off"}
                                         size={50}
-                                        color="black"
+                                        color= {alarm.enabled ? "black" : "grey"}
                                         marginRight={-10}
+                                        onPress={() => toggleOnOff(alarm.id)}
                                     />
                                 </Card.Actions>
                             </Card.Content>
