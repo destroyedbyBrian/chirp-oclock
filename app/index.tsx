@@ -8,7 +8,6 @@ import {
     TouchableOpacity,
     Button,
     Modal,
-    AppState,
 } from "react-native";
 import globalStyles from "./styles/globalStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -20,7 +19,6 @@ import * as Notifications from "expo-notifications";
 import NfcManager, { NfcTech } from "react-native-nfc-manager";
 import { useAlarmStore } from "../stores/alarmsStore";
 import { useAlarmSoundStore } from "../stores/soundStore";
-import { useAppStateStore } from "@/stores/appStateStore";
 import {
     Gesture,
     GestureDetector,
@@ -34,6 +32,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { zustandStorage } from "../storage/mmkvStorage";
 import { STORAGE_KEYS } from '../storage/storageKeys';
+import { useNfcStore } from '../stores/nfcStore';
 
 // ---- ALARM OBJECT PROPERTIES
 type Alarm = {
@@ -92,23 +91,18 @@ export default function HomeScreen() {
     */
     const [newAlarmButtonPressed, setNewAlarmButtonPressed] = useState<boolean>(false);
     const [successfulNFC, setSuccessfulNFC] = useState<boolean>(false);
-    const [nfcPromptVisible, setNfcPromptVisible] = useState<boolean>(false);
+    // const [nfcPromptVisible, setNfcPromptVisible] = useState<boolean>(false);
 
     /* ---- GET GLOBAL STATE for :
         - (alarmStore) all alarms
         - (soundStore) all properties 
     */
-    const alarms = useAlarmStore((s) => s.alarms);
-    const isAlarmActive = useAlarmSoundStore((s) => s.isAlarmRinging);
-    const stopAlarmSound = useAlarmSoundStore((s) => s.stopAlarmSound);
+    const alarms = useAlarmStore(s => s.alarms);
+    const isAlarmActive = useAlarmSoundStore(s => s.isAlarmRinging);
+    const stopAlarmSound = useAlarmSoundStore(s => s.stopAlarmSound);
+    const nfcPromptVisible = useNfcStore(s => s.nfcPromptVisible);
+    const setNfcPromptVisible = useNfcStore(s => s.setNfcPromptVisible);
     
-    // ---  SIDE EFFECT : display modal if alarm is set to trigger 
-    useEffect(() => {
-        if (isAlarmActive && !nfcPromptVisible) {
-            setNfcPromptVisible(true);
-        }
-    }, [isAlarmActive]);
-
     // ---- MEMOIZED, SORTED, DEDUPED, nextDue ALARMS ARRAY ---
     const { sortedAlarms } = useMemo(() => {
         // De-duplicate by time (keeping last occurrence of dups)
@@ -152,10 +146,26 @@ export default function HomeScreen() {
                 return;
             }
 
-            setSuccessfulNFC(true);
+            // Stop the alarm sound FIRST if it's active
+            if (isAlarmActive) {
+                console.log('Stopping alarm sound after successful NFC scan...');
+                try {
+                    const currentSound = useAlarmSoundStore.getState().soundRef;
+                    if (currentSound && typeof currentSound.stopAsync === 'function') {
+                        await currentSound.stopAsync();
+                        await currentSound.unloadAsync();
+                    }
+                    useAlarmSoundStore.getState().setSoundRef(null);
+                    useAlarmSoundStore.getState().setIsAlarmRinging(false);
+                    console.log('Alarm sound stopped successfully after NFC scan');
+                } catch (soundError) {
+                    console.log('Error stopping alarm sound after NFC scan:', soundError);
+                }
+            }
 
-            // Update UI state first to prevent any race conditions
+            // Update UI state
             setNfcPromptVisible(false);
+            setSuccessfulNFC(true);
 
             // Then handle notifications
             try {
@@ -163,15 +173,6 @@ export default function HomeScreen() {
                 await Notifications.dismissAllNotificationsAsync();
             } catch (notifError) {
                 console.log('Error handling notifications:', notifError);
-            }
-
-            // Stop the alarm sound if it's active
-            if (isAlarmActive) {
-                try {
-                    await stopAlarmSound();
-                } catch (soundError) {
-                    console.log('Error stopping alarm sound:', soundError);
-                }
             }
 
             // Clear storage last
@@ -222,13 +223,13 @@ export default function HomeScreen() {
         const triggerDates = [];
 
         // Collect the trigger dates. Create 12 notifications, each 3 seconds apart.
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < 3; i++) {
             const nextDate = new Date(currentTriggerDate.getTime() + (i * 3 * 1000));
             triggerDates.push(nextDate);
         }
         
         // Schedule notifications for each date
-        const notificationIds = await Promise.all(triggerDates.map(async date => {
+        const notificationIds = await Promise.all(triggerDates.map(async (date, index) => {
             return await Notifications.scheduleNotificationAsync({
                 content: {
                     title: "⏰ Alarm",
@@ -236,6 +237,7 @@ export default function HomeScreen() {
                         .toString()
                         .padStart(2, "0")} ${alarm.ampm.toUpperCase()} (tap to stop)`,
                     sound: "netflix.mp3",
+                    data: { isChainNotification: true, chainIndex: index }
                 },
                 trigger: {
                     type: Notifications.SchedulableTriggerInputTypes.DATE,
@@ -243,7 +245,6 @@ export default function HomeScreen() {
                 },
             });
         }));
-        
         useAlarmStore.getState().updateAlarmNotifications(alarm.id, notificationIds);
     }    
     
@@ -288,16 +289,13 @@ export default function HomeScreen() {
             // Then handle each alarm
             const updateNotifications = async () => {
                 await cancelAllNotifications();
-                
                 // Only schedule notifications for enabled alarms
                 for (const alarm of currentAlarms) {
                     if (alarm.enabled) {
                         await scheduleAlarmNotification(alarm);
-                    } else {
-                    }
+                    } 
                 }
             };
-
             updateNotifications();
         }
 
@@ -314,7 +312,6 @@ export default function HomeScreen() {
             <ScrollView style={globalStyles.scrollView}>
                 <View style={globalStyles.subHeaderBar}>
                     <Text style={globalStyles.subHeaderText}>Alarm</Text>
-                    <Text>Number of alarms: {alarms.length}</Text>
                     <Pressable onPress={() => router.push("/settings")}>
                         <Ionicons
                             name="menu-outline"

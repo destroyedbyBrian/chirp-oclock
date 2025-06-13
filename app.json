@@ -54,6 +54,7 @@
         {
           "sounds": [
             "./assets/sounds/ringtone.mp3",
+            "./assets/sounds/notiAlarm.mp3",
             "./assets/sounds/netflix.mp3"
           ]
         }
