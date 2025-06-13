@@ -26,7 +26,62 @@ export default function Layout() {
 
     const nfcPromptVisible = useNfcStore(s => s.nfcPromptVisible);
     const setNfcPromptVisible = useNfcStore(s => s.setNfcPromptVisible);
-    
+    const lastStateChangeRef = useRef<number>(0);
+    const stateChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Add function to check for recent alarm triggers
+    const checkRecentAlarmTrigger = async () => {
+        try {
+            const now = new Date();
+            const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000);
+            
+            // Get all scheduled notifications
+            const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+            console.log('Checking scheduled notifications:', scheduledNotifications.length);
+            
+            // Check if any notification was scheduled in the last 2 minutes
+            const recentTrigger = scheduledNotifications.some(notification => {
+                if (!notification.trigger || !('date' in notification.trigger)) {
+                    return false;
+                }
+                const triggerDate = new Date(notification.trigger.date);
+                const isRecent = triggerDate >= twoMinutesAgo && triggerDate <= now;
+                if (isRecent) {
+                    console.log('Found recent trigger:', triggerDate);
+                }
+                return isRecent;
+            });
+
+            if (recentTrigger) {
+                console.log('Recent alarm trigger detected, activating alarm...');
+                // Cancel any existing notifications first
+                await Notifications.cancelAllScheduledNotificationsAsync();
+                await Notifications.dismissAllNotificationsAsync();
+                await playSoundEndlessly();
+                setNfcPromptVisible(true);
+            }
+        } catch (error) {
+            console.log('Error checking recent alarm triggers:', error);
+        }
+    };
+
+    // Add function to check for active notifications
+    const checkActiveNotifications = async () => {
+        try {
+            const activeNotifications = await Notifications.getPresentedNotificationsAsync();
+            console.log('Active notifications:', activeNotifications.length);
+            
+            if (activeNotifications.length > 0) {
+                console.log('Found active notifications, activating alarm...');
+                await Notifications.cancelAllScheduledNotificationsAsync();
+                await Notifications.dismissAllNotificationsAsync();
+                await playSoundEndlessly();
+                setNfcPromptVisible(true);
+            }
+        } catch (error) {
+            console.log('Error checking active notifications:', error);
+        }
+    };
 
     useEffect(() => {
         // Skip if effect has already run
@@ -55,28 +110,63 @@ export default function Layout() {
             }),
         });
 
-        // Add AppState listener
-        const handleAppStateChange = (nextAppState: string) => {
+        // Add AppState listener with debouncing
+        const handleAppStateChange = async (nextAppState: string) => {
+            const now = Date.now();
+            const timeSinceLastChange = now - lastStateChangeRef.current;
+            
+            // Clear any existing timeout
+            if (stateChangeTimeoutRef.current) {
+                clearTimeout(stateChangeTimeoutRef.current);
+            }
+
+            // If we've had a state change in the last 500ms, debounce it
+            if (timeSinceLastChange < 500) {
+                console.log('Debouncing rapid state change...');
+                stateChangeTimeoutRef.current = setTimeout(() => {
+                    handleAppStateChange(nextAppState);
+                }, 500);
+                return;
+            }
+
             console.log('App state changed to:', nextAppState);
+            lastStateChangeRef.current = now;
             setIsAppInForeGround(nextAppState === 'active');
+            
+            // Check for recent alarm triggers when app comes to foreground
+            if (nextAppState === 'active') {
+                console.log('App became active, checking for notifications...');
+                // First check for active notifications
+                await checkActiveNotifications();
+                // Then check for recent triggers
+                await checkRecentAlarmTrigger();
+            }
         };
+
         const appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
         setIsAppInForeGround(AppState.currentState === 'active');
         
         notificationListener.current = Notifications.addNotificationReceivedListener(async() => {
+            console.log('Notification received, current app state:', AppState.currentState);
+            
             if (AppState.currentState === "active") {
                 setIsAppInForeGround(true);
             }
 
             if (!currentActiveAlarm) {
+                console.log('No active alarm, playing sound...');
                 await playSoundEndlessly();
             }
 
             if (AppState.currentState === "active") {
+                console.log('App is active, canceling notifications...');
                 await Notifications.cancelAllScheduledNotificationsAsync();
                 await Notifications.dismissAllNotificationsAsync();
             }
         });
+
+        // Check for active notifications on initial mount
+        checkActiveNotifications();
 
         return () => {
             if (notificationListener.current) {
@@ -85,8 +175,11 @@ export default function Layout() {
             if (responseListener.current) {
                 Notifications.removeNotificationSubscription(responseListener.current);
             }
+            if (stateChangeTimeoutRef.current) {
+                clearTimeout(stateChangeTimeoutRef.current);
+            }
             appStateSubscription?.remove();
-            cleanupSound();  // Add cleanup call
+            cleanupSound();
         }
     }, []);
 
