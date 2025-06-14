@@ -139,7 +139,6 @@ export default function NewAlarmScreen() {
                         >Done</Text>
                     </Pressable>
                 </View>
-                {/* <Text style={alarmSettingStyles.subHeader2}>Ring in 7hours: 24 minutes</Text> */}
                 <Text style={alarmSettingStyles.subHeader2}>{ringingIn}</Text>
                 <Card style={alarmSettingStyles.cardContainer1}>
                     <Card.Content style={alarmSettingStyles.cardContent1}>

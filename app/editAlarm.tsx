@@ -22,6 +22,11 @@ import * as Notifications from "expo-notifications";
 import { zustandStorage } from "../storage/mmkvStorage";
 import { STORAGE_KEYS } from '../storage/storageKeys';
 
+type Alarm = {
+    hour: number;
+    minute: number;
+    ampm: string;
+};
 
 export default function EditAlarmScreen() { 
     const [testNFCButton, setTestNFCButton] = useState<boolean>(false);
@@ -29,6 +34,54 @@ export default function EditAlarmScreen() {
     const [hour, setHour] = useState<number>(7);
     const [minute, setMinute] = useState<number>(0);
     const [ampm, setAmpm] = useState<string>('AM');
+
+    const [ringingIn, setRingingIn] = useState<string>('');
+
+    function get24Hour(hour: number, ampm: string) {
+        ampm = ampm.toLowerCase();
+        if (ampm === "am") return hour === 12 ? 0 : hour;
+        if (ampm === "pm") return hour === 12 ? 12 : hour + 12;
+        return hour; // fallback
+    }
+
+    function getNextAlarmDate(alarm: Alarm) {
+        const now = new Date();
+        const hour = get24Hour(alarm.hour, alarm.ampm);
+        const alarmDate = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+            hour,
+            alarm.minute,
+            0,
+            0
+        );
+        if (alarmDate <= now) {
+            alarmDate.setDate(alarmDate.getDate() + 1);
+        }
+        return alarmDate;
+    }
+
+    // Calculate time difference whenever hour or minute changes
+    useEffect(() => {
+        const currentAlarm: Alarm = {
+            hour,
+            minute,
+            ampm
+        };
+        
+        const nextAlarmDate = getNextAlarmDate(currentAlarm);
+        const now = new Date();
+        
+        // Calculate difference in minutes, using ceil to round up partial minutes
+        const diffMinutes = Math.ceil((nextAlarmDate.getTime() - now.getTime()) / (1000 * 60));
+        
+        // Convert to hours and minutes
+        const hours = Math.floor(diffMinutes / 60);
+        const minutes = diffMinutes % 60;
+        
+        setRingingIn(`Ring in ${hours} hours : ${minutes} minutes`);
+    }, [hour, minute, ampm]);
 
     const { id } = useLocalSearchParams<{ id: string }>();
     const updateAlarm = useAlarmStore((s) => s.updateAlarm);
@@ -113,7 +166,7 @@ export default function EditAlarmScreen() {
                         >Done</Text>
                     </Pressable>
                 </View>
-                <Text style={alarmSettingStyles.subHeader2}>Ring in 7hours: 24 minutes</Text>
+                <Text style={alarmSettingStyles.subHeader2}>{ringingIn}</Text>
                 <Card style={alarmSettingStyles.cardContainer1}>
                     <Card.Content style={alarmSettingStyles.cardContent1}>
                         <HourPicker hour={hour} onHourChange={setHour} />
