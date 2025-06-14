@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import moment from "moment-timezone";
 
@@ -15,6 +15,17 @@ const AmPm: React.FC<AmPmProps> = ({ ampm, onAmpmChange }) => {
     const [scrollPosition, setScrollPosition] = useState<number>(0);
     const choices = ["am", "pm"];
     const infiniteChoices = [...choices, ...choices, ...choices];
+
+    useEffect(() => {
+        const now = new Date();
+        const currentHr = now.getHours();
+
+        if (currentHr < 12) {
+            onAmpmChange("am")
+        } else {
+            onAmpmChange("pm")
+        }
+    }, [])
 
     const handleLayout = () => {
         const currentTime = moment();
