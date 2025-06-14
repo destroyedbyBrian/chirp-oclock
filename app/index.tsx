@@ -484,10 +484,9 @@ function CardComponent({ alarm }: { alarm: AlarmWithNextDue }) {
 
 const styles = StyleSheet.create({
     card: {
-        marginHorizontal: 8,
-        marginVertical: 8,
         backgroundColor: "#ffffff",
         elevation: 1,
+        borderRadius: 12
     },
     cardContent: {
         display: "flex",
