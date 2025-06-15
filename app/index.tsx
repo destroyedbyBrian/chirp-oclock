@@ -12,6 +12,7 @@ import {
 import globalStyles from "./styles/globalStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Fontisto from "@expo/vector-icons/Fontisto";
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Card, Title, Paragraph } from "react-native-paper";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { router } from "expo-router";
@@ -91,7 +92,7 @@ export default function HomeScreen() {
     */
     const [newAlarmButtonPressed, setNewAlarmButtonPressed] = useState<boolean>(false);
     const [successfulNFC, setSuccessfulNFC] = useState<boolean>(false);
-    // const [nfcPromptVisible, setNfcPromptVisible] = useState<boolean>(false);
+    
 
     /* ---- GET GLOBAL STATE for :
         - (alarmStore) all alarms
@@ -328,7 +329,7 @@ export default function HomeScreen() {
                     <Text>No alarms yet.</Text>
                 ) : (
                     sortedAlarms.map((alarm) => (
-                        <CardComponent alarm={alarm} key={alarm.id} />
+                        <CardComponent alarm={alarm} key={alarm.id}/>
                     ))
                 )}
             </ScrollView>
@@ -374,11 +375,16 @@ export default function HomeScreen() {
 
 const RENDER_POSITION = 0;
 
-function CardComponent({ alarm }: { alarm: AlarmWithNextDue }) {
+function CardComponent({ alarm }: { 
+    alarm: AlarmWithNextDue, 
+}) {
     const triggerDeleteIcon = useSharedValue(false);
     const position = useSharedValue(RENDER_POSITION);
     const deleteAlarm = useAlarmStore((s) => s.deleteAlarm);
     const deletedRef = useRef<Boolean>(false);
+
+    const [deletePromptVisible, setDeletePromptVisible] = useState<boolean>(false);
+    const [deleteIconType, setDeleteIconType] = useState<'none' | 'delete' | 'delete-empty'>('none');
 
     const handleDeletedAlarmData = async (id: string) => {
         // Get the alarm being deleted to access its notification IDs
@@ -398,34 +404,41 @@ function CardComponent({ alarm }: { alarm: AlarmWithNextDue }) {
     const panGesture = Gesture.Pan()
         .onUpdate((e) => {
             "worklet";
-            if (
-                e.translationX < -150 &&
-                !triggerDeleteIcon.value &&
-                !deletedRef.current
-            ) {
+            if (e.translationX < -200 && !triggerDeleteIcon.value) {
                 triggerDeleteIcon.value = true;
                 deletedRef.current = true;
                 runOnJS(handleDeletedAlarmData)(alarm.id);
                 runOnJS(deleteAlarm)(alarm.id);
-            }
-            if (e.translationX > 100) {
+            } else if (e.translationX < -140) {
+                position.value = RENDER_POSITION + e.translationX;
+                runOnJS(setDeletePromptVisible)(true);
+                runOnJS(setDeleteIconType)('delete-empty');
+            } else if (e.translationX < -50) {
+                position.value = RENDER_POSITION + e.translationX;
+                runOnJS(setDeletePromptVisible)(true);
+                runOnJS(setDeleteIconType)('delete');
+            } else if (e.translationX > 100) {
                 e.translationX = withTiming(RENDER_POSITION, { duration: 2000 });
+            } else {
+                position.value = RENDER_POSITION + e.translationX;
+                runOnJS(setDeletePromptVisible)(false);
+                runOnJS(setDeleteIconType)('none');
             }
-            position.value = RENDER_POSITION + e.translationX;
         })
         .onEnd((e) => {
             const limit = RENDER_POSITION - 150;
-            // Once card component passes a certain point to the left
             if (position.value < limit) {
                 triggerDeleteIcon.value = true;
             } else {
                 position.value = withTiming(RENDER_POSITION, { duration: 100 });
                 triggerDeleteIcon.value = false;
+                runOnJS(setDeleteIconType)('none');
             }
         });
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [{ translateX: position.value }],
+        opacity: deletePromptVisible ? withTiming(0.5, { duration: 200 }) : withTiming(1, { duration: 200 }),
     }));
 
     const toggleAlarm = useAlarmStore((s) => s.toggleAlarm);
@@ -439,13 +452,13 @@ function CardComponent({ alarm }: { alarm: AlarmWithNextDue }) {
         <GestureHandlerRootView>
             <GestureDetector gesture={panGesture}>
                 <Animated.View style={[animatedStyle, styles.card]}>
-                    <TouchableOpacity
-                        onPress={() =>
-                            router.push({
-                                pathname: "/editAlarm",
-                                params: { id: alarm.id },
-                            })
-                        }
+                    <View
+                        // onPress={() =>
+                        //     router.push({
+                        //         pathname: "/editAlarm",
+                        //         params: { id: alarm.id },
+                        //     })
+                        // }
                     >
                         <Card style={styles.card}>
                             <Card.Content style={styles.cardContent}>
@@ -465,6 +478,15 @@ function CardComponent({ alarm }: { alarm: AlarmWithNextDue }) {
                                     </Paragraph>
                                 </View>
                                 <Card.Actions>
+                                    {deletePromptVisible ? 
+                                        <View>
+                                        {deleteIconType === 'delete' && (
+                                            <MaterialCommunityIcons name="delete" size={50} color="black" />
+                                        )}
+                                        {deleteIconType === 'delete-empty' && (
+                                            <MaterialCommunityIcons name="delete-empty" size={50} color="black" />
+                                        )}
+                                    </View> :
                                     <Fontisto
                                         name={alarm.enabled ? "toggle-on": "toggle-off"}
                                         size={50}
@@ -472,10 +494,11 @@ function CardComponent({ alarm }: { alarm: AlarmWithNextDue }) {
                                         marginRight={-10}
                                         onPress={() => toggleOnOff(alarm.id)}
                                     />
+                                    }
                                 </Card.Actions>
                             </Card.Content>
                         </Card>
-                    </TouchableOpacity>
+                    </View>
                 </Animated.View>
             </GestureDetector>
         </GestureHandlerRootView>

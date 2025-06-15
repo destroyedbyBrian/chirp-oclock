@@ -48,7 +48,7 @@ export default function SettingsScreen() {
                                             fontSize: 18,
                                             fontWeight: "bold",
                                             marginTop: -3,
-                                            paddingLeft: 16,
+                                            paddingLeft: 8,
                                         }}
                                     >
                                         04-55-F5-72-5D-64-80
@@ -73,7 +73,7 @@ export default function SettingsScreen() {
                                             fontSize: 18,
                                             fontWeight: "bold",
                                             marginTop: -3,
-                                            paddingLeft: 16,
+                                            paddingLeft: 8,
                                         }}
                                     >
                                         02-W2-DF-22-F2-L0-78
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#ffffff",
     },
     cardContent: {
-        marginTop: -10,
+        marginTop: -12,
         minHeight: 80,
     },
     row: {
@@ -156,6 +156,7 @@ const styles = StyleSheet.create({
     row2: {
         display: "flex",
         flexDirection: "row",
+        marginHorizontal: -4,
         justifyContent: "space-between",
     },
 })
