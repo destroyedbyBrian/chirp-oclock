@@ -237,7 +237,7 @@ export default function HomeScreen() {
                     body: `Alarm for ${alarm.hour.toString().padStart(2, "0")}:${alarm.minute
                         .toString()
                         .padStart(2, "0")} ${alarm.ampm.toUpperCase()} (tap to stop)`,
-                    sound: "netflix.mp3",
+                    sound: "notificationAlarm.mp3",
                     data: { isChainNotification: true, chainIndex: index }
                 },
                 trigger: {
