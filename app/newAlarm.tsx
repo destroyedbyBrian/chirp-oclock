@@ -18,6 +18,7 @@ import { useState, useEffect } from "react";
 import { router } from "expo-router";
 import { useAlarmStore } from '../stores/alarmsStore';
 import NfcManager, {NfcTech} from 'react-native-nfc-manager';
+import * as Haptics from 'expo-haptics';
 
 type Alarm = {
     hour: number;
@@ -90,6 +91,7 @@ export default function NewAlarmScreen() {
             ampm: ampm,
             enabled: true, 
         });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.push('/');
     };
 

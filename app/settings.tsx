@@ -4,6 +4,7 @@ import {
     Text,
     View,
     Pressable,
+    Button
 } from "react-native";
 import { Card, Title, Paragraph } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -130,6 +131,7 @@ export default function SettingsScreen() {
                     </Card>
                 </View>
                 </View>
+                <Button title="Go to testNFC" onPress={() => router.push("/testRun/testNFC")} />
             </ScrollView>
         </SafeAreaView>
     )

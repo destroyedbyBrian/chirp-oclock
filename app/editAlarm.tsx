@@ -21,6 +21,8 @@ import NfcManager, {NfcTech} from 'react-native-nfc-manager';
 import * as Notifications from "expo-notifications";
 import { zustandStorage } from "../storage/mmkvStorage";
 import { STORAGE_KEYS } from '../storage/storageKeys';
+import * as Haptics from 'expo-haptics';
+
 
 type Alarm = {
     hour: number;
@@ -105,6 +107,7 @@ export default function EditAlarmScreen() {
     const handleDelete = async () => {
         await handleDeletedAlarmData(id);
         deleteAlarm(id);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
         router.push('/');
     };
 
@@ -116,6 +119,7 @@ export default function EditAlarmScreen() {
             ampm: ampm,
             enabled: true,
         });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.push('/');
     }
 

@@ -1,6 +1,8 @@
 import { Dimensions, View, Text, ScrollView, StyleSheet, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import moment from "moment-timezone";
 import { useState, useRef } from "react";
+import * as Haptics from 'expo-haptics';
+
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 const CARD_HEIGHT = 250;
@@ -48,6 +50,7 @@ const HourPicker: React.FC<HourPickerProps> = ({ hour, onHourChange }) => {
       const numberIndex = trueIndex % numbers.length;
       const value = Number(numbers[numberIndex]);
       if (value !== hour) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
         onHourChange(value);
       }
     };
@@ -139,6 +142,7 @@ const MinutePicker: React.FC<MinutePickerProps> = ({ minute, onMinuteChange }) =
       const value = Number(numbers[numberIndex]);
       if (value !== minute) {
         onMinuteChange(value);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
       }
     };
   

@@ -8,10 +8,13 @@ import {
   Text,
   Modal,
   StyleSheet,
-  Pressable
+  Pressable,
+  Button
 } from "react-native";
 import { Paragraph } from 'react-native-paper';
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
+
 
 export default function TestNFC() {
   const [successfulNFC, setSuccessfulNFC] = useState<boolean>(false);
@@ -65,6 +68,7 @@ export default function TestNFC() {
         <Paragraph>
           {successfulNFC ? 'Tag Connected' : 'No Tags Connected'}
         </Paragraph>
+        <Button title="back to settings" onPress={() => router.back()}/>
       </View>
     </SafeAreaView>
   );

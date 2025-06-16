@@ -34,6 +34,7 @@ import Animated, {
 import { zustandStorage } from "../storage/mmkvStorage";
 import { STORAGE_KEYS } from '../storage/storageKeys';
 import { useNfcStore } from '../stores/nfcStore';
+import * as Haptics from 'expo-haptics';
 
 // ---- ALARM OBJECT PROPERTIES
 type Alarm = {
@@ -158,7 +159,6 @@ export default function HomeScreen() {
                     }
                     useAlarmSoundStore.getState().setSoundRef(null);
                     useAlarmSoundStore.getState().setIsAlarmRinging(false);
-                    console.log('Alarm sound stopped successfully after NFC scan');
                 } catch (soundError) {
                     console.log('Error stopping alarm sound after NFC scan:', soundError);
                 }
@@ -173,7 +173,6 @@ export default function HomeScreen() {
                 await Notifications.cancelAllScheduledNotificationsAsync();
                 await Notifications.dismissAllNotificationsAsync();
             } catch (notifError) {
-                console.log('Error handling notifications:', notifError);
             }
 
             // Clear storage last
@@ -322,11 +321,12 @@ export default function HomeScreen() {
                         />
                     </Pressable>
                 </View>
-                <Button title="Go to testNFC" onPress={() => router.push("/testRun/testNFC")} />
-                <Button title="Go to testNoti" onPress={() => router.push("/testRun/testPushNoti")} />
-                <Button title="Go to testGesture" onPress={() => router.push("/testRun/testGesture")} />
                 {alarms.length === 0 ? (
-                    <Text>No alarms yet.</Text>
+                    <View style={styles.emptyStateContainer}>
+                        <Ionicons name="alarm-outline" size={64} color="#888" style={styles.emptyStateIcon} />
+                        <Text style={styles.emptyStateTitle}>No Alarms Yet</Text>
+                        <Text style={styles.emptyStateSubtitle}>Tap the + button below to create your first alarm</Text>
+                    </View>
                 ) : (
                     sortedAlarms.map((alarm) => (
                         <CardComponent alarm={alarm} key={alarm.id}/>
@@ -385,6 +385,7 @@ function CardComponent({ alarm }: {
 
     const [deletePromptVisible, setDeletePromptVisible] = useState<boolean>(false);
     const [deleteIconType, setDeleteIconType] = useState<'none' | 'delete' | 'delete-empty'>('none');
+    const toggleAlarm = useAlarmStore((s) => s.toggleAlarm);
 
     const handleDeletedAlarmData = async (id: string) => {
         // Get the alarm being deleted to access its notification IDs
@@ -407,6 +408,7 @@ function CardComponent({ alarm }: {
             if (e.translationX < -200 && !triggerDeleteIcon.value) {
                 triggerDeleteIcon.value = true;
                 deletedRef.current = true;
+                runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Rigid);
                 runOnJS(handleDeletedAlarmData)(alarm.id);
                 runOnJS(deleteAlarm)(alarm.id);
             } else if (e.translationX < -140) {
@@ -441,24 +443,25 @@ function CardComponent({ alarm }: {
         opacity: deletePromptVisible ? withTiming(0.5, { duration: 200 }) : withTiming(1, { duration: 200 }),
     }));
 
-    const toggleAlarm = useAlarmStore((s) => s.toggleAlarm);
+    
     const toggleOnOff = (id: string) => {
         // Pass the opposite of current enabled state
         const newEnabledState = !alarm.enabled;
         toggleAlarm(id, newEnabledState);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
     return (
         <GestureHandlerRootView>
             <GestureDetector gesture={panGesture}>
                 <Animated.View style={[animatedStyle, styles.card]}>
-                    <View
-                        // onPress={() =>
-                        //     router.push({
-                        //         pathname: "/editAlarm",
-                        //         params: { id: alarm.id },
-                        //     })
-                        // }
+                    <TouchableOpacity
+                        onPress={() =>
+                            router.push({
+                                pathname: "/editAlarm",
+                                params: { id: alarm.id },
+                            })
+                        }
                     >
                         <Card style={styles.card}>
                             <Card.Content style={styles.cardContent}>
@@ -498,7 +501,7 @@ function CardComponent({ alarm }: {
                                 </Card.Actions>
                             </Card.Content>
                         </Card>
-                    </View>
+                    </TouchableOpacity>
                 </Animated.View>
             </GestureDetector>
         </GestureHandlerRootView>
@@ -612,5 +615,29 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#666',
         marginBottom: 2,
+    },
+    emptyStateContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: 100,
+        paddingHorizontal: 20,
+    },
+    emptyStateIcon: {
+        marginBottom: 16,
+        opacity: 0.7,
+    },
+    emptyStateTitle: {
+        fontSize: 24,
+        fontWeight: '600',
+        color: '#222',
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    emptyStateSubtitle: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        lineHeight: 22,
     },
 })

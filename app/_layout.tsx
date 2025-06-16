@@ -37,7 +37,6 @@ export default function Layout() {
             
             // Get all scheduled notifications
             const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-            console.log('Checking scheduled notifications:', scheduledNotifications.length);
             
             // Check if any notification was scheduled in the last 2 minutes
             const recentTrigger = scheduledNotifications.some(notification => {
@@ -46,14 +45,11 @@ export default function Layout() {
                 }
                 const triggerDate = new Date(notification.trigger.date);
                 const isRecent = triggerDate >= twoMinutesAgo && triggerDate <= now;
-                if (isRecent) {
-                    console.log('Found recent trigger:', triggerDate);
-                }
+                
                 return isRecent;
             });
 
             if (recentTrigger) {
-                console.log('Recent alarm trigger detected, activating alarm...');
                 // Cancel any existing notifications first
                 await Notifications.cancelAllScheduledNotificationsAsync();
                 await Notifications.dismissAllNotificationsAsync();
@@ -69,10 +65,8 @@ export default function Layout() {
     const checkActiveNotifications = async () => {
         try {
             const activeNotifications = await Notifications.getPresentedNotificationsAsync();
-            console.log('Active notifications:', activeNotifications.length);
             
             if (activeNotifications.length > 0) {
-                console.log('Found active notifications, activating alarm...');
                 await Notifications.cancelAllScheduledNotificationsAsync();
                 await Notifications.dismissAllNotificationsAsync();
                 await playSoundEndlessly();
@@ -218,43 +212,35 @@ export default function Layout() {
     async function playSoundEndlessly() {
         // If already playing or locked, return early
         if (currentActiveAlarm || soundLockRef.current) {
-            console.log('Sound already playing or locked, returning early');
             return;
         }
 
         // Acquire lock
         soundLockRef.current = true;
-        console.log('Acquired sound lock');
 
         try {
             // Stop any existing sound first
             const currentSound = useAlarmSoundStore.getState().soundRef;
             if (currentSound && typeof currentSound.stopAsync === 'function') {
-                console.log('Stopping existing sound...');
                 await currentSound.stopAsync();
                 await currentSound.unloadAsync();
             }
 
-            console.log('Creating new sound...');
             const { sound } = await Audio.Sound.createAsync(
                 require('../assets/sounds/ringtone.mp3'), 
                 { shouldPlay: true, isLooping: true }
             );
             
             // Set refs and state before releasing lock
-            console.log('Sound created, setting refs...');
             setSoundRef(sound);
             setAlarmActive(true);
-            console.log('Sound setup complete');
         } catch (e) {
-            console.log("Audio error", e);
             // Reset state on error
             setSoundRef(null);
             setAlarmActive(false);
         } finally {
             // Release lock only after everything is done
             soundLockRef.current = false;
-            console.log('Released sound lock');
         }
     }
 
@@ -262,12 +248,10 @@ export default function Layout() {
     const cleanupSound = async () => {
         // Acquire lock during cleanup
         soundLockRef.current = true;
-        console.log('Acquired lock for cleanup');
 
         try {
             const currentSound = useAlarmSoundStore.getState().soundRef;
             if (currentSound && typeof currentSound.stopAsync === 'function') {
-                console.log('Cleaning up sound...');
                 await currentSound.stopAsync();
                 await currentSound.unloadAsync();
             }
@@ -277,7 +261,6 @@ export default function Layout() {
             setSoundRef(null);
             setAlarmActive(false);
             soundLockRef.current = false;
-            console.log('Sound cleanup complete, released lock');
         }
     };
 
@@ -330,24 +313,6 @@ export default function Layout() {
             name="testRun/testNFC"
             options={({ route }) => ({
                 title: 'Test NFC',
-                headerShown: false,
-                animation: 'simple_push',
-                animationDuration: 500,
-            })}
-        />
-        <Stack.Screen 
-            name="testRun/testPushNoti"
-            options={({ route }) => ({
-                title: 'Test Push Notification',
-                headerShown: false,
-                animation: 'simple_push',
-                animationDuration: 500,
-            })}
-        />
-        <Stack.Screen 
-            name="testRun/testGesture"
-            options={({ route }) => ({
-                title: 'Test Gesture Handler',
                 headerShown: false,
                 animation: 'simple_push',
                 animationDuration: 500,

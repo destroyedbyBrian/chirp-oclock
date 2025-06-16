@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import moment from "moment-timezone";
+import * as Haptics from 'expo-haptics';
+
 
 const AMPM_ITEM_HEIGHT = 80;  // Smaller than hour/minute
 const AMPM_VISIBLE_ITEMS = 2;
@@ -13,6 +15,7 @@ type AmPmProps = {
 const AmPm: React.FC<AmPmProps> = ({ ampm, onAmpmChange }) => {
     const scrollRef = useRef<ScrollView>(null);
     const [scrollPosition, setScrollPosition] = useState<number>(0);
+    const [previousAmPm, setPreviousAmPm] = useState<string>("");
     const choices = ["am", "pm"];
     const infiniteChoices = [...choices, ...choices, ...choices];
 
@@ -46,7 +49,13 @@ const AmPm: React.FC<AmPmProps> = ({ ampm, onAmpmChange }) => {
         const centerIndex = Math.round(offsetY / AMPM_ITEM_HEIGHT) + Math.floor(AMPM_VISIBLE_ITEMS / 2);
         const trueIndex = centerIndex % totalRows;
         const choiceIndex = trueIndex % choices.length;
-        onAmpmChange(choices[choiceIndex]);
+        const newAmPm = choices[choiceIndex];
+        
+        if (newAmPm !== previousAmPm) {
+            onAmpmChange(newAmPm);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
+            setPreviousAmPm(newAmPm);
+        }
     };
 
     const handleMomentumScrollEnd = (event: any) => {
