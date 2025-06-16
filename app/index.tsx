@@ -345,8 +345,18 @@ export default function HomeScreen() {
                         <Text style={styles.modalSubtitle}>
                             Hold your phone near the tag to dismiss alarm
                         </Text>
-                        <Text style={styles.alarmTime}>10:10 AM</Text>
-                        <Pressable style={styles.scanButton} onPress={doNfcScan}>
+                        {sortedAlarms.length > 0 && (
+                            <Text style={styles.alarmTime}>
+                                {`${sortedAlarms[0].hour.toString().padStart(2, "0")}:${sortedAlarms[0].minute.toString().padStart(2, "0")} ${sortedAlarms[0].ampm}`}
+                            </Text>
+                        )}
+                        <Pressable 
+                            style={({ pressed }) => [
+                                styles.scanButton,
+                                pressed && styles.scanButtonPressed
+                            ]} 
+                            onPress={doNfcScan}
+                        >
                             <Ionicons
                                 name="card-outline"
                                 size={24}
@@ -354,6 +364,12 @@ export default function HomeScreen() {
                                 style={{ marginRight: 6 }}
                             />
                             <Text style={styles.scanButtonLabel}>Scan Now</Text>
+                        </Pressable>
+                        <Pressable 
+                            style={styles.cancelButton}
+                            onPress={() => setNfcPromptVisible(false)}
+                        >
+                            <Text style={styles.cancelButtonLabel}>Cancel</Text>
                         </Pressable>
                     </View>
                 </View>
@@ -384,7 +400,7 @@ function CardComponent({ alarm }: {
     const deletedRef = useRef<Boolean>(false);
 
     const [deletePromptVisible, setDeletePromptVisible] = useState<boolean>(false);
-    const [deleteIconType, setDeleteIconType] = useState<'none' | 'delete' | 'delete-empty'>('none');
+    const [deleteIconType, setDeleteIconType] = useState<'toggle' | 'delete' | 'delete-empty'>('toggle');
     const toggleAlarm = useAlarmStore((s) => s.toggleAlarm);
 
     const handleDeletedAlarmData = async (id: string) => {
@@ -424,7 +440,7 @@ function CardComponent({ alarm }: {
             } else {
                 position.value = RENDER_POSITION + e.translationX;
                 runOnJS(setDeletePromptVisible)(false);
-                runOnJS(setDeleteIconType)('none');
+                runOnJS(setDeleteIconType)('toggle');
             }
         })
         .onEnd((e) => {
@@ -434,7 +450,8 @@ function CardComponent({ alarm }: {
             } else {
                 position.value = withTiming(RENDER_POSITION, { duration: 100 });
                 triggerDeleteIcon.value = false;
-                runOnJS(setDeleteIconType)('none');
+                runOnJS(setDeleteIconType)('toggle');
+                runOnJS(setDeletePromptVisible)(false);
             }
         });
 
@@ -463,7 +480,7 @@ function CardComponent({ alarm }: {
                             })
                         }
                     >
-                        <Card style={styles.card}>
+                        <Card>
                             <Card.Content style={styles.cardContent}>
                                 <View>
                                     <Title style={styles.time}>
@@ -473,10 +490,10 @@ function CardComponent({ alarm }: {
                                             .toString()
                                             .padStart(2, "0")} ${alarm.ampm}`}
                                     </Title>
-                                    <Paragraph style={styles.caption}>
+                                    <Paragraph style={[styles.caption, { color: "black" }]}>
                                         Wake up
                                     </Paragraph>
-                                    <Paragraph style={[styles.caption, { color: "#007AFF" }]}>
+                                    <Paragraph style={[styles.caption, { color: "black", opacity: 0.3 }]}>
                                         Next: {alarm.nextDue.toLocaleString()}
                                     </Paragraph>
                                 </View>
@@ -488,6 +505,15 @@ function CardComponent({ alarm }: {
                                         )}
                                         {deleteIconType === 'delete-empty' && (
                                             <MaterialCommunityIcons name="delete-empty" size={50} color="black" />
+                                        )}
+                                        {deleteIconType === 'toggle' && (
+                                            <Fontisto
+                                            name={alarm.enabled ? "toggle-on": "toggle-off"}
+                                            size={50}
+                                            color= {alarm.enabled ? "black" : "grey"}
+                                            marginRight={-10}
+                                            onPress={() => toggleOnOff(alarm.id)}
+                                            />
                                         )}
                                     </View> :
                                     <Fontisto
@@ -512,7 +538,8 @@ const styles = StyleSheet.create({
     card: {
         backgroundColor: "#ffffff",
         elevation: 1,
-        borderRadius: 12
+        borderRadius: 12,
+        marginBottom: 16
     },
     cardContent: {
         display: "flex",
@@ -528,11 +555,14 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         fontSize: 30,
         marginBottom: -1,
+        letterSpacing: 0.8,
+        color: 'black'
     },
     caption: {
         fontWeight: "500",
         fontSize: 14,
         marginBottom: -2,
+        letterSpacing: 1.2
     },
     addAlarmButton: {
         position: "absolute",
@@ -546,10 +576,10 @@ const styles = StyleSheet.create({
     },
     modalContainer: {
         flex: 1,
-        backgroundColor: "rgba(0,0,0,0.44)",
+        backgroundColor: "rgba(0,0,0,0.5)",
         justifyContent: "flex-end",
         paddingBottom: 0,
-      },
+    },
     modalContent: {
         backgroundColor: "#fff",
         borderTopLeftRadius: 22,
@@ -558,50 +588,65 @@ const styles = StyleSheet.create({
         padding: 30,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: -3 },
-        shadowOpacity: 0.18,
-        shadowRadius: 10,
-        elevation: 11,
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+        elevation: 15,
     },
     modalTitle: {
         fontWeight: '700',
-        fontSize: 22,
-        marginBottom: 4,
+        fontSize: 24,
+        marginBottom: 8,
         color: "#222",
         letterSpacing: 0.3,
     },
     modalSubtitle: {
-        fontSize: 15,
-        color: "#888",
-        marginBottom: 18,
-        textAlign: "center"
+        fontSize: 16,
+        color: "#666",
+        marginBottom: 20,
+        textAlign: "center",
+        lineHeight: 22,
     },
     alarmTime: {
-        fontSize: 18,
+        fontSize: 32,
         color: "#007AFF",
-        fontWeight: "600",
-        marginBottom: 20,
-        marginTop: 5
+        fontWeight: "700",
+        marginBottom: 24,
+        marginTop: 8,
     },
     scanButton: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: "#007AFF",
         borderRadius: 22,
-        paddingHorizontal: 25,
-        paddingVertical: 11,
-        marginBottom: 13,
-        marginTop: 5,
+        paddingHorizontal: 28,
+        paddingVertical: 14,
+        marginBottom: 16,
+        marginTop: 8,
         shadowColor: "#007AFF",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.18,
-        shadowRadius: 6,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    scanButtonPressed: {
+        transform: [{ scale: 0.98 }],
+        opacity: 0.9,
     },
     scanButtonLabel: {
         color: "#fff",
-        fontSize: 17,
-        fontWeight: "600"
-    }, 
+        fontSize: 18,
+        fontWeight: "600",
+        letterSpacing: 0.3,
+    },
+    cancelButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+    },
+    cancelButtonLabel: {
+        color: "#666",
+        fontSize: 16,
+        fontWeight: "500",
+    },
     delete: {
         backgroundColor: 'red',
         overflow: 'hidden',

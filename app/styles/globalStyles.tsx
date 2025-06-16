@@ -22,6 +22,7 @@ const globalStyles = StyleSheet.create({
         fontSize: 35,
         marginTop: -11,
         fontWeight: "700",
+        letterSpacing: 0.4
     },
 });
 

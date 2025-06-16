@@ -248,7 +248,7 @@ export default function EditAlarmScreen() {
                 <TouchableOpacity 
                     onPress={handleDelete}
                     style={{
-                        backgroundColor: '#FF3B30',
+                        backgroundColor: 'black',
                         marginHorizontal: 16,
                         marginTop: 24,
                         padding: 16,
