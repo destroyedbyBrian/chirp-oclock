@@ -365,12 +365,6 @@ export default function HomeScreen() {
                             />
                             <Text style={styles.scanButtonLabel}>Scan Now</Text>
                         </Pressable>
-                        <Pressable 
-                            style={styles.cancelButton}
-                            onPress={() => setNfcPromptVisible(false)}
-                        >
-                            <Text style={styles.cancelButtonLabel}>Cancel</Text>
-                        </Pressable>
                     </View>
                 </View>
             </Modal>
@@ -637,15 +631,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "600",
         letterSpacing: 0.3,
-    },
-    cancelButton: {
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-    },
-    cancelButtonLabel: {
-        color: "#666",
-        fontSize: 16,
-        fontWeight: "500",
     },
     delete: {
         backgroundColor: 'red',
