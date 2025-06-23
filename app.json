@@ -12,21 +12,17 @@
       "bundleIdentifier": "com.briantan.testNFCA1",
       "infoPlist": {
         "NFCReaderUsageDescription": "This app uses NFC to scan tags for alarm dismissal",
-        "com.apple.developer.nfc.readersession.formats": [
-          "NDEF"
-        ],
         "NSUserNotificationUsageDescription": "Allow NFC Alarm to send notifications.",
         "UIBackgroundModes": [
           "audio",
           "fetch",
+          "remote-notification",
+          "audio",
+          "fetch",
           "remote-notification"
         ],
-        "NSMicrophoneUsageDescription": "This app does not require microphone access"
-      },
-      "entitlements": {
-        "com.apple.developer.nfc.readersession.formats": [
-          "NDEF"
-        ]
+        "NSMicrophoneUsageDescription": "This app does not require microphone access",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -38,7 +34,8 @@
         "android.permission.NFC",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
-      ]
+      ],
+      "package": "com.briantan.testNFCA1"
     },
     "web": {
       "bundler": "metro",
@@ -46,10 +43,12 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./withNfc",
       [
         "react-native-nfc-manager",
         {
-          "nfcPermission": "This app uses NFC to scan tags for alarm dismissal"
+          "nfcPermission": "This app uses NFC to scan tags for alarm dismissal",
+          "includeNdefEntitlement": false
         }
       ],
       "expo-router",
@@ -62,7 +61,15 @@
           ]
         }
       ],
-      "expo-av"
+      "expo-av",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "18.4"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

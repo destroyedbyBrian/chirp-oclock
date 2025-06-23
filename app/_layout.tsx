@@ -33,7 +33,7 @@ export default function Layout() {
     const checkRecentAlarmTrigger = async () => {
         try {
             const now = new Date();
-            const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000);
+            const oneMinutesAgo = new Date(now.getTime() - 1 * 60 * 1000);
             
             // Get all scheduled notifications
             const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
@@ -44,7 +44,7 @@ export default function Layout() {
                     return false;
                 }
                 const triggerDate = new Date(notification.trigger.date);
-                const isRecent = triggerDate >= twoMinutesAgo && triggerDate <= now;
+                const isRecent = triggerDate >= oneMinutesAgo && triggerDate <= now;
                 
                 return isRecent;
             });
@@ -123,13 +123,11 @@ export default function Layout() {
                 return;
             }
 
-            console.log('App state changed to:', nextAppState);
             lastStateChangeRef.current = now;
             setIsAppInForeGround(nextAppState === 'active');
             
             // Check for recent alarm triggers when app comes to foreground
             if (nextAppState === 'active') {
-                console.log('App became active, checking for notifications...');
                 // First check for active notifications
                 await checkActiveNotifications();
                 // Then check for recent triggers

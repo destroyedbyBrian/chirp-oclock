@@ -26,10 +26,10 @@ export default function TestNFC() {
     } catch {}
   
     try {
-      await NfcManager.requestTechnology([NfcTech.Ndef]);
+      await NfcManager.requestTechnology([NfcTech.IsoDep]);
       await NfcManager.getTag();
+      setNfcPromptVisible(false);
       setSuccessfulNFC(true);
-      setNfcPromptVisible(false);   // Only close modal on success
     } catch (e) {
       setSuccessfulNFC(false);
       // Don't close modal here

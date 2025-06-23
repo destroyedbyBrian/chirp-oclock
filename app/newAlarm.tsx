@@ -101,7 +101,7 @@ export default function NewAlarmScreen() {
             (async () => {
                 try {
                     await NfcManager.start();
-                    await NfcManager.requestTechnology([NfcTech.Ndef]);
+                    await NfcManager.requestTechnology([NfcTech.IsoDep]);
                     const tag = await NfcManager.getTag();
                     console.log('NFC Tag:', tag);
                     if (!cancelled) setSuccessfulNFC(true);

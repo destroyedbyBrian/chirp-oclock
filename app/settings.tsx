@@ -29,10 +29,10 @@ export default function SettingsScreen() {
       } catch {}
     
       try {
-        await NfcManager.requestTechnology([NfcTech.Ndef]);
+        await NfcManager.requestTechnology([NfcTech.IsoDep]);
         await NfcManager.getTag();
+        setNfcPromptVisible(false);
         setSuccessfulNFC(true);
-        setNfcPromptVisible(false);   // Only close modal on success
       } catch (e) {
         setSuccessfulNFC(false);
         // Don't close modal here
@@ -179,7 +179,6 @@ export default function SettingsScreen() {
                         <Text style={styles.modalSubtitle}>
                             Hold your phone near the tag to dismiss alarm
                         </Text>
-                        <Text style={styles.alarmTime}>10:10 AM</Text>
                         <Pressable style={styles.scanButton} onPress={doNfcScan}>
                             <Ionicons name="card-outline" size={24} color="#fff" style={{ marginRight: 6 }} />
                             <Text style={styles.scanButtonLabel}>Scan Now</Text>

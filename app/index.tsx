@@ -135,22 +135,19 @@ export default function HomeScreen() {
         try {
             // First, ensure NFC is properly initialized
             if (!NfcManager.isSupported()) {
-                console.log('NFC not supported');
                 return;
             }
 
             // Request NFC technology and get tag
-            await NfcManager.requestTechnology([NfcTech.Ndef]);
+            await NfcManager.requestTechnology([NfcTech.IsoDep]);
             const tag = await NfcManager.getTag();
             
             if (!tag) {
-                console.log('No tag found');
                 return;
             }
 
             // Stop the alarm sound FIRST if it's active
             if (isAlarmActive) {
-                console.log('Stopping alarm sound after successful NFC scan...');
                 try {
                     const currentSound = useAlarmSoundStore.getState().soundRef;
                     if (currentSound && typeof currentSound.stopAsync === 'function') {
