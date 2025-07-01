@@ -1,21 +1,26 @@
 import { Stack, router } from 'expo-router';
 import { AppState } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { View, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import { Audio } from 'expo-av';
+import { Audio, Video, ResizeMode } from 'expo-av';
 import { useAlarmSoundStore } from '../stores/soundStore';
 import NfcManager, {NfcTech} from 'react-native-nfc-manager';
 import { useAppStateStore } from "@/stores/appStateStore";
 import { useNfcStore } from '@/stores/nfcStore';
+import * as SplashScreen from 'expo-splash-screen';
 
+SplashScreen.preventAutoHideAsync(); 
 
 export default function Layout() {
     const notificationListener = useRef<Notifications.EventSubscription>();  
     const responseListener = useRef<Notifications.EventSubscription>(); 
     const effectRunRef = useRef<boolean>(false);  // Add this ref to track effect runs
     const soundLockRef = useRef<boolean>(false);  // Add lock ref
+
+    const [showSplash, setShowSplash] = useState<boolean>(true);
 
     const setSoundRef = useAlarmSoundStore(s => s.setSoundRef);
     const currentActiveAlarm = useAlarmSoundStore(s => s.isAlarmRinging);
@@ -78,6 +83,18 @@ export default function Layout() {
     };
 
     useEffect(() => {
+        const timer = setTimeout(() => setShowSplash(false), 2500);
+
+        const prepare = async () => {
+            // Simulate async loading (e.g., fonts, data)
+            await new Promise(resolve => setTimeout(resolve, 2000));
+      
+            // Hide splash when ready
+            await SplashScreen.hideAsync();
+          };
+      
+          prepare();
+
         // Skip if effect has already run
         if (effectRunRef.current) {
             return;
@@ -116,7 +133,6 @@ export default function Layout() {
 
             // If we've had a state change in the last 500ms, debounce it
             if (timeSinceLastChange < 500) {
-                console.log('Debouncing rapid state change...');
                 stateChangeTimeoutRef.current = setTimeout(() => {
                     handleAppStateChange(nextAppState);
                 }, 500);
@@ -151,7 +167,6 @@ export default function Layout() {
             }
 
             if (AppState.currentState === "active") {
-                console.log('App is active, canceling notifications...');
                 await Notifications.cancelAllScheduledNotificationsAsync();
                 await Notifications.dismissAllNotificationsAsync();
             }
@@ -161,6 +176,7 @@ export default function Layout() {
         checkActiveNotifications();
 
         return () => {
+            clearTimeout(timer)
             if (notificationListener.current) {
                 Notifications.removeNotificationSubscription(notificationListener.current);
             }
@@ -262,60 +278,87 @@ export default function Layout() {
         }
     };
 
+    if (showSplash) {
+        return ( 
+            <View style={styles.container}>
+                <Video
+                    source={require('../assets/videos/splashScreenAnimated.mp4')}
+                    shouldPlay
+                    isLooping
+                    resizeMode={ResizeMode.COVER}
+                    style={[StyleSheet.absoluteFill, {left : -30}]} 
+                />
+            </View>
+        )
+    }
+
     return (
-    <Stack
-        screenOptions={{
-        headerShown: true,
-        gestureEnabled: true,
-        gestureDirection: 'horizontal',
-        animation: 'slide_from_left', // Default animation for forward navigation
-        presentation: 'card',
-        }}
-    >
-        <Stack.Screen
-          name="index"
-          options={() => ({
-            title: 'index',
-            headerShown: false,
-          })}
-        />
-        <Stack.Screen
-            name="settings"
-            options={({ route }) => ({
-                title: 'Settings',
+        <Stack
+            screenOptions={{
+            headerShown: true,
+            gestureEnabled: true,
+            gestureDirection: 'horizontal',
+            animation: 'slide_from_left', // Default animation for forward navigation
+            presentation: 'card',
+            }}
+        >
+            <Stack.Screen
+            name="index"
+            options={() => ({
+                title: 'index',
                 headerShown: false,
-                animation: 'slide_from_right', // This will make the screen slide from left when going back
-                // For more control, we can use the custom animation options
-                animationDuration: 1000,
             })}
-        />
-        <Stack.Screen 
-            name="newAlarm"
-            options={({ route }) => ({
-                title: 'New Alarm',
-                headerShown: false,
-                animation: 'simple_push',
-                animationDuration: 500,
-            })}
-        />
-        <Stack.Screen 
-            name="editAlarm"
-            options={({ route }) => ({
-                title: 'Edit Alarm',
-                headerShown: false,
-                animation: 'simple_push',
-                animationDuration: 500,
-            })}
-        />
-        {/* <Stack.Screen 
-            name="testRun/testNFC"
-            options={({ route }) => ({
-                title: 'Test NFC',
-                headerShown: false,
-                animation: 'simple_push',
-                animationDuration: 500,
-            })}
-        /> */}
-    </Stack>
+            />
+            <Stack.Screen
+                name="settings"
+                options={({ route }) => ({
+                    title: 'Settings',
+                    headerShown: false,
+                    animation: 'slide_from_right', // This will make the screen slide from left when going back
+                    // For more control, we can use the custom animation options
+                    animationDuration: 1000,
+                })}
+            />
+            <Stack.Screen 
+                name="newAlarm"
+                options={({ route }) => ({
+                    title: 'New Alarm',
+                    headerShown: false,
+                    animation: 'simple_push',
+                    animationDuration: 500,
+                })}
+            />
+            <Stack.Screen 
+                name="editAlarm"
+                options={({ route }) => ({
+                    title: 'Edit Alarm',
+                    headerShown: false,
+                    animation: 'simple_push',
+                    animationDuration: 500,
+                })}
+            />
+            {/* <Stack.Screen 
+                name="testRun/testNFC"
+                options={({ route }) => ({
+                    title: 'Test NFC',
+                    headerShown: false,
+                    animation: 'simple_push',
+                    animationDuration: 500,
+                })}
+            /> */}
+        </Stack>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        // This is the crucial part: it hides the parts of the video
+        // that are scaled outside of the screen boundaries.
+        overflow: 'hidden',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#000',
+    },
+});
+

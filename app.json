@@ -2,9 +2,14 @@
   "expo": {
     "name": "testNFCA1",
     "slug": "tNFCA1",
-    "version": "1",
+    "version": "2",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/appIcon.png",
+    "splash": {
+      "image": "./assets/images/splashScreen.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#ffffff"
+    },
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -13,6 +18,11 @@
       "infoPlist": {
         "NFCReaderUsageDescription": "This app uses NFC to scan tags for alarm dismissal",
         "NSUserNotificationUsageDescription": "Allow NFC Alarm to send notifications.",
+        "entitlements": {
+          "com.apple.developer.nfc.readersession.formats": [
+            "TAG"
+          ]
+        },
         "UIBackgroundModes": [
           "audio",
           "fetch",
@@ -27,7 +37,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/appIcon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
@@ -44,13 +54,6 @@
     },
     "plugins": [
       "./withNfc",
-      [
-        "react-native-nfc-manager",
-        {
-          "nfcPermission": "This app uses NFC to scan tags for alarm dismissal",
-          "includeNdefEntitlement": false
-        }
-      ],
       "expo-router",
       [
         "expo-notifications",
@@ -69,7 +72,8 @@
             "deploymentTarget": "18.4"
           }
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true

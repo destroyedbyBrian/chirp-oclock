@@ -42,7 +42,7 @@ const {
   function withIosNfcEntitlement(c, {includeNdefEntitlement}) {
     return withEntitlementsPlist(c, (config) => {
       // Add the required formats
-      let entitlements = ['NDEF', 'TAG']
+      let entitlements = ['TAG']
       if (includeNdefEntitlement === false) {
         entitlements = ['TAG']
       }
