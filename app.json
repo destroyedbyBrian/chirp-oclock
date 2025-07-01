@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "testNFCA1",
-    "slug": "tNFCA1",
+    "name": "Chirp O'Clock",
+    "slug": "chirp-oclock",
     "version": "2",
     "orientation": "portrait",
     "icon": "./assets/images/appIcon.png",
@@ -21,13 +21,10 @@
         "entitlements": {
           "com.apple.developer.nfc.readersession.formats": [
             "TAG"
-          ]
+          ],
+          "com.apple.developer.notifications.critical-alerts": true
         },
         "UIBackgroundModes": [
-          "audio",
-          "fetch",
-          "remote-notification",
-          "audio",
           "fetch",
           "remote-notification"
         ],
@@ -42,8 +39,8 @@
       },
       "permissions": [
         "android.permission.NFC",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO"
       ],
       "package": "com.briantan.testNFCA1"
     },
@@ -83,8 +80,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "796ff4a7-5f0b-488b-a38a-480ad11f007a"
+        "projectId": "871727ed-ffda-4c4f-aaa5-a28737a94333"
       }
-    }
+    },
+    "owner": "brianhugo"
   }
 }

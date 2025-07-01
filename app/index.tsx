@@ -6,7 +6,6 @@ import {
     StyleSheet,
     Pressable,
     TouchableOpacity,
-    Button,
     Modal,
 } from "react-native";
 import globalStyles from "./styles/globalStyles";
@@ -101,7 +100,6 @@ export default function HomeScreen() {
     */
     const alarms = useAlarmStore(s => s.alarms);
     const isAlarmActive = useAlarmSoundStore(s => s.isAlarmRinging);
-    const stopAlarmSound = useAlarmSoundStore(s => s.stopAlarmSound);
     const nfcPromptVisible = useNfcStore(s => s.nfcPromptVisible);
     const setNfcPromptVisible = useNfcStore(s => s.setNfcPromptVisible);
     

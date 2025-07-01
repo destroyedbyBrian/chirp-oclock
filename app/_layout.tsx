@@ -1,4 +1,4 @@
-import { Stack, router } from 'expo-router';
+import { Stack } from 'expo-router';
 import { AppState } from 'react-native';
 import { View, StyleSheet } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
@@ -7,7 +7,7 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Audio, Video, ResizeMode } from 'expo-av';
 import { useAlarmSoundStore } from '../stores/soundStore';
-import NfcManager, {NfcTech} from 'react-native-nfc-manager';
+import NfcManager from 'react-native-nfc-manager';
 import { useAppStateStore } from "@/stores/appStateStore";
 import { useNfcStore } from '@/stores/nfcStore';
 import * as SplashScreen from 'expo-splash-screen';
@@ -26,7 +26,6 @@ export default function Layout() {
     const currentActiveAlarm = useAlarmSoundStore(s => s.isAlarmRinging);
     const setAlarmActive = useAlarmSoundStore(s => s.setIsAlarmRinging)
 
-    const isAppInForeGround = useAppStateStore(s => s.isAppInForeGround);
     const setIsAppInForeGround = useAppStateStore(s => s.setIsAppInForeGround);
 
     const nfcPromptVisible = useNfcStore(s => s.nfcPromptVisible);
