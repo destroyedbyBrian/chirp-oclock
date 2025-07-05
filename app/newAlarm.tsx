@@ -4,6 +4,10 @@ import {
     Text,
     Pressable,
     TouchableOpacity,
+    Modal,
+    TextInput,
+    KeyboardAvoidingView,
+    Platform,
 } from "react-native";
 import globalStyles from "./styles/globalStyles";
 import alarmSettingStyles from "./styles/alarmSettingStyles";
@@ -32,6 +36,9 @@ export default function NewAlarmScreen() {
     const [hour, setHour] = useState<number>(7);
     const [minute, setMinute] = useState<number>(0);
     const [ampm, setAmpm] = useState<string>('AM');
+    const [vibrate, setVibrate] = useState<boolean>(true);
+    const [description, setDescription] = useState<string>('');
+    const [showDescriptionModal, setShowDescriptionModal] = useState<boolean>(false);
 
     const [ringingIn, setRingingIn] = useState<string>('');
 
@@ -89,7 +96,9 @@ export default function NewAlarmScreen() {
             hour: hour,
             minute: minute,
             ampm: ampm,
-            enabled: true, 
+            enabled: true,
+            vibrate: vibrate,
+            description: description,
         });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.push('/');
@@ -152,40 +161,6 @@ export default function NewAlarmScreen() {
                 </Card>
                 <Card style={alarmSettingStyles.cardContainer2}>
                     <Card.Content style={alarmSettingStyles.cardContent2}>
-                        <View style={alarmSettingStyles.row}>
-                            <View>
-                                <Title style={{ fontSize: 18, fontWeight: "bold" }}>Ringtone</Title>
-                                <Paragraph
-                                    style={{
-                                        fontSize: 13,
-                                        fontWeight: "bold",
-                                        color: "grey",
-                                        marginTop: -7,
-                                    }}
-                                >Delight</Paragraph>
-                            </View>
-                            <Entypo
-                                name="chevron-right"
-                                size={28}
-                                color="black"
-                                style={{
-                                    alignSelf: "center",
-                                    marginTop: -7,
-                                    paddingRight: 4,
-                                }}
-                            />
-                        </View>
-                        <View style={alarmSettingStyles.row}>
-                            <View>
-                                <Title style={{ fontSize: 18, fontWeight: "bold" }}>Vibrate</Title>
-                            </View>
-                            <Fontisto
-                                name="toggle-on"
-                                size={40}
-                                color="black"
-                                style={{ marginTop: -4 }}
-                            />
-                        </View>
                         <TouchableOpacity onPress={() => setTestNFCButton(true)}>
                             <View style={alarmSettingStyles.row}>
                                 <View>
@@ -214,10 +189,162 @@ export default function NewAlarmScreen() {
                                 />
                             </View>
                         </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setVibrate(!vibrate)}>
+                            <View style={alarmSettingStyles.row}>
+                                <View>
+                                    <Title style={{ fontSize: 18, fontWeight: "bold" }}>Vibrate</Title>
+                                </View>
+                                <Fontisto
+                                    name={vibrate ? "toggle-on" : "toggle-off"}
+                                    size={40}
+                                    color="black"
+                                    style={{ marginTop: -2 }}
+                                />
+                            </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setShowDescriptionModal(true)}>
+                            <View style={alarmSettingStyles.row}>
+                                <View>
+                                    <Title style={{ fontSize: 18, fontWeight: "bold" }}>Description</Title>
+                                    <Paragraph
+                                        style={{
+                                            fontSize: 13,
+                                            fontWeight: "bold",
+                                            color: "grey",
+                                            marginTop: -7,
+                                        }}
+                                    >
+                                        {description || 'No description'}
+                                    </Paragraph>
+                                </View>
+                                <Entypo
+                                    name="chevron-right"
+                                    size={28}
+                                    color="black"
+                                    style={{
+                                        alignSelf: "center",
+                                        marginTop: -7,
+                                        paddingRight: 4,
+                                    }}
+                                />
+                            </View>
+                        </TouchableOpacity>
                     </Card.Content>
                 </Card>
-                {/* <Text>Scan successful:{successfulNFC ? "true" : "false"}</Text> */}
             </View>
+
+            {/* Description Input Modal */}
+            <Modal
+                visible={showDescriptionModal}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setShowDescriptionModal(false)}
+            >
+                <KeyboardAvoidingView 
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={{ flex: 1 }}
+                >
+                    <View style={{
+                        flex: 1,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: 20,
+                    }}>
+                        <View style={{
+                            backgroundColor: 'white',
+                            borderRadius: 12,
+                            padding: 20,
+                            width: '100%',
+                            maxWidth: 400,
+                            shadowColor: '#000',
+                            shadowOffset: {
+                                width: 0,
+                                height: 2,
+                            },
+                            shadowOpacity: 0.25,
+                            shadowRadius: 3.84,
+                            elevation: 5,
+                        }}>
+                            <Text style={{
+                                fontSize: 20,
+                                fontWeight: 'bold',
+                                marginBottom: 15,
+                                textAlign: 'center',
+                            }}>
+                                Alarm Description
+                            </Text>
+                            
+                            <TextInput
+                                style={{
+                                    borderWidth: 1,
+                                    borderColor: '#ddd',
+                                    borderRadius: 8,
+                                    padding: 12,
+                                    fontSize: 16,
+                                    marginBottom: 20,
+                                    minHeight: 100,
+                                    textAlignVertical: 'top',
+                                }}
+                                placeholder="Enter alarm description..."
+                                value={description}
+                                onChangeText={setDescription}
+                                multiline={true}
+                                numberOfLines={1}
+                                maxLength={15}
+                                autoFocus={true}
+                            />
+                            
+                            <View style={{
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                gap: 10,
+                            }}>
+                                <TouchableOpacity
+                                    style={{
+                                        flex: 1,
+                                        backgroundColor: '#f0f0f0',
+                                        padding: 12,
+                                        borderRadius: 8,
+                                        alignItems: 'center',
+                                    }}
+                                    onPress={() => {
+                                        setDescription('');
+                                        setShowDescriptionModal(false);
+                                    }}
+                                >
+                                    <Text style={{
+                                        fontSize: 16,
+                                        fontWeight: '600',
+                                        color: '#666',
+                                    }}>
+                                        Clear
+                                    </Text>
+                                </TouchableOpacity>
+                                
+                                <TouchableOpacity
+                                    style={{
+                                        flex: 1,
+                                        backgroundColor: 'black',
+                                        padding: 12,
+                                        borderRadius: 8,
+                                        alignItems: 'center',
+                                    }}
+                                    onPress={() => setShowDescriptionModal(false)}
+                                >
+                                    <Text style={{
+                                        fontSize: 16,
+                                        fontWeight: '600',
+                                        color: 'white',
+                                    }}>
+                                        Save
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
         </SafeAreaView>
     )
 }

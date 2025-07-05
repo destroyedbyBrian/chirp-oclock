@@ -11,6 +11,8 @@ export type Alarm = {
   ampm: string;
   notificationIdArray?: string[];
   enabled: boolean;
+  vibrate?: boolean;
+  description?: string;
   // Optionally: ampm?: 'AM' | 'PM', label?: string, repeat?: string[]
 };
 

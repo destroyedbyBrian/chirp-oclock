@@ -44,7 +44,9 @@ type Alarm = {
     ampm: string;
     notificationIdArray?: string[];
     enabled: boolean;
+    description?: string;    
 };
+
 type AlarmWithNextDue = Alarm & { 
     nextDue: Date ;
 };
@@ -168,7 +170,7 @@ export default function HomeScreen() {
             }
         }
     };
-    
+
     // STOP DELETING & CREATING NEW ALARMS DAILY
     useEffect(() => {
         if (alarms.length > 0) {
@@ -534,7 +536,7 @@ function CardComponent({ alarm }: {
                                             .padStart(2, "0")} ${alarm.ampm}`}
                                     </Title>
                                     <Paragraph style={[styles.caption, { color: "black" }]}>
-                                        Wake up
+                                        {alarm.description}
                                     </Paragraph>
                                     <Paragraph style={[styles.caption, { color: "black", opacity: 0.3 }]}>
                                         Next: {alarm.nextDue.toLocaleString()}

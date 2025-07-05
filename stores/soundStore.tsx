@@ -46,7 +46,6 @@ export const useAlarmSoundStore = create<AlarmSoundStore>()(
       storage: zustandStorage,
       partialize: (state) => ({ 
         isAlarmRinging: state.isAlarmRinging 
-        // Don't persist soundRef
       }),
     }
   )
