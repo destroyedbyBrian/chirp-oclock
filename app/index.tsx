@@ -35,6 +35,7 @@ import { STORAGE_KEYS } from '../storage/storageKeys';
 import { useNfcStore } from '../stores/nfcStore';
 import * as Haptics from 'expo-haptics';
 
+
 // ---- ALARM OBJECT PROPERTIES
 type Alarm = {
     id: string;
@@ -66,8 +67,8 @@ function get24Hour(hour: number, ampm: string) {
     return hour; // fallback
 }
 
-function getNextAlarmDate(alarm: Alarm) {
-    const now = new Date();
+function getNextAlarmDate(alarm: Alarm, baseDate?: Date) {
+    const now = baseDate || new Date();
     const hour = get24Hour(alarm.hour, alarm.ampm);
     const alarmDate = new Date(
         now.getFullYear(),
@@ -128,6 +129,59 @@ export default function HomeScreen() {
         return { sortedAlarms: enriched };
     }, [alarms]);
 
+    
+    // Check if any enabled alarms have expired and need renewal
+    const checkAndRenewAlarms = async () => {
+        const currentTime = new Date();
+        let hasChanges = false;
+        
+        // Look through all the alarms
+        for (const alarm of alarms) {
+            // Check if alarm is enabled
+            if (alarm.enabled) {
+                // Get the alarm's next due time
+                const alarmNextDue = getNextAlarmDate(alarm);
+                
+                // Check if the alarm has already passed (expired)
+                if (alarmNextDue <= currentTime) {
+                    // Calculate the next occurrence by adding days until we find a future time
+                    const newNextDue = getNextAlarmDate(alarm, currentTime);
+                    
+                    // Cancel existing notifications for this alarm
+                    if (alarm.notificationIdArray) {
+                        for (const notificationId of alarm.notificationIdArray) {
+                            await Notifications.cancelScheduledNotificationAsync(notificationId);
+                        }
+                    }
+                    
+                    // Create updated alarm with new nextDue
+                    const updatedAlarm = {
+                        ...alarm,
+                        nextDue: newNextDue
+                    };
+                    
+                    // Schedule new notifications with the updated time
+                    await scheduleAlarmNotification(updatedAlarm);
+                    
+                    hasChanges = true;
+                }
+            }
+        }
+    };
+    
+    // STOP DELETING & CREATING NEW ALARMS DAILY
+    useEffect(() => {
+        if (alarms.length > 0) {
+            checkAndRenewAlarms();
+            
+            // const intervalId = setInterval(checkAndRenewAlarms, 60000); // Check every 5 minutes
+            const intervalId = setInterval(checkAndRenewAlarms, 5 * 60 * 1000); // Check every 5 minutes
+            
+            return () => {
+                clearInterval(intervalId);
+            };
+        }
+    }, [])
 
     const doNfcScan = async () => {
         try {
