@@ -217,8 +217,8 @@ export default function HomeScreen() {
         let currentTriggerDate = new Date(alarmDate.getTime());
         const triggerDates = [];
 
-        // Collect the trigger dates. Create 12 notifications, each 3 seconds apart.
-        for (let i = 0; i < 3; i++) {
+        // Collect the trigger dates. Create 60 notifications, each 3 seconds apart.
+        for (let i = 0; i < 60; i++) {
             const nextDate = new Date(currentTriggerDate.getTime() + (i * 3 * 1000));
             triggerDates.push(nextDate);
         }
