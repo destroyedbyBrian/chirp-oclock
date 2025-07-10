@@ -13,7 +13,6 @@ export type Alarm = {
   enabled: boolean;
   vibrate?: boolean;
   description?: string;
-  // Optionally: ampm?: 'AM' | 'PM', label?: string, repeat?: string[]
 };
 
 type AlarmState = {

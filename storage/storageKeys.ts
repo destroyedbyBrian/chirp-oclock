@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
     // Store persistence keys
     ALARMS_STORE: 'alarms-storage',
     SOUND_STORE: 'sound-storage',
+    APPCOLORSCHEME_STORE: 'appColorScheme-storage'
 } as const;
 
 // Type for the storage keys

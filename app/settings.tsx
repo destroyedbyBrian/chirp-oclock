@@ -5,7 +5,7 @@ import {
     View,
     Pressable,
     TouchableOpacity,
-    Modal
+    Modal,
 } from "react-native";
 import { Card, Title, Paragraph } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,13 +16,19 @@ import Entypo from "@expo/vector-icons/Entypo";
 import globalStyles from './styles/globalStyles';
 import { router } from "expo-router";
 import { useState } from "react";
+import { useAppColorScheme} from '@/stores/appColorScheme';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
+import Fontisto from "@expo/vector-icons/Fontisto";
+
 
 
 export default function SettingsScreen() {
     const [successfulNFC, setSuccessfulNFC] = useState<boolean>(false);
     const [nfcPromptVisible, setNfcPromptVisible] = useState<boolean>(false);
-  
+
+    const isAppColorSchemeDark = useAppColorScheme(s => s.isAppColorSchemeDark);
+    const setIsAppColorSchemeDark = useAppColorScheme(s => s.setIsAppColorSchemeDark);
+
     const doNfcScan = async () => {
       try {
         await NfcManager.cancelTechnologyRequest();
@@ -40,6 +46,11 @@ export default function SettingsScreen() {
         NfcManager.cancelTechnologyRequest();
       }
     };
+
+    const toggleAppScheme = () => { 
+        const toggleDarkModeButtonState = !isAppColorSchemeDark;
+        setIsAppColorSchemeDark(toggleDarkModeButtonState);
+    }
 
     return (
         <SafeAreaView style={globalStyles.safeArea}>
@@ -114,7 +125,7 @@ export default function SettingsScreen() {
                         </Card.Content>
                     </Card>
                 </View>
-                <View style={styles.wrapperCountainer}>
+                <View style={styles.cardOthers}>
                     <Text style={{ fontWeight: "bold", fontSize: 16 }}>
                             Others
                     </Text>
@@ -125,30 +136,19 @@ export default function SettingsScreen() {
                                 <View>
                                     <Title
                                         style={{
-                                            fontSize: 16,
+                                            fontSize: 17,
                                             fontWeight: "bold",
                                         }}
                                     >
-                                        Date & Time
+                                        Dark Mode
                                     </Title>
-                                    <Paragraph
-                                        style={{
-                                            fontSize: 12,
-                                            fontWeight: "bold",
-                                            color: "grey",
-                                            marginTop: -6,
-                                        }}
-                                    >
-                                        System Time
-                                    </Paragraph>
                                 </View>
-                                <Entypo
-                                    name="chevron-right"
-                                    size={26}
-                                    color="black"
-                                    style={{
-                                        alignSelf: "center",
-                                    }}
+                                <Fontisto
+                                    name={isAppColorSchemeDark ? "toggle-on": "toggle-off"}
+                                    size={45}
+                                    color= {isAppColorSchemeDark ? "black" : "grey"}
+                                    style={{ marginLeft: 12 }}
+                                    onPress={() => {toggleAppScheme()}}
                                 />
                             </View>
                         </Card.Content>
@@ -201,8 +201,11 @@ const styles = StyleSheet.create({
         backgroundColor: "#ffffff",
     },
     cardContent: {
-        marginTop: -12,
-        minHeight: 80,
+        marginTop: -8,
+    },
+    cardOthers: {
+        paddingHorizontal: 10,
+        paddingBottom: 20,
     },
     row: {
         display: "flex",
@@ -214,6 +217,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         marginHorizontal: -4,
         justifyContent: "space-between",
+        alignItems: "center",
     },
     testNFCButton: {
         backgroundColor: 'black',

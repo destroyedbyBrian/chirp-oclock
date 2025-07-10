@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 import { AppState } from 'react-native';
-import { View, StyleSheet } from 'react-native';
-import { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, useColorScheme, Image } from 'react-native';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
@@ -10,6 +10,7 @@ import { useAlarmSoundStore } from '../stores/soundStore';
 import NfcManager from 'react-native-nfc-manager';
 import { useAppStateStore } from "@/stores/appStateStore";
 import { useNfcStore } from '@/stores/nfcStore';
+import { useAppColorScheme} from '@/stores/appColorScheme';
 import * as SplashScreen from 'expo-splash-screen';
 
 SplashScreen.preventAutoHideAsync(); 
@@ -20,80 +21,42 @@ export default function Layout() {
     const effectRunRef = useRef<boolean>(false);  // Add this ref to track effect runs
     const soundLockRef = useRef<boolean>(false);  // Add lock ref
 
+    const isAppColorSchemeDark = useAppColorScheme(s => s.isAppColorSchemeDark);
+    const setIsAppColorSchemeDark = useAppColorScheme(s => s.setIsAppColorSchemeDark);
+
     const [showSplash, setShowSplash] = useState<boolean>(true);
+    const setIsAppInForeGround = useAppStateStore(s => s.setIsAppInForeGround);
+    const splashState = useAppStateStore((state) => state.splashState);
+    const setSplashState = useAppStateStore((state) => state.setSplashState);
 
     const setSoundRef = useAlarmSoundStore(s => s.setSoundRef);
     const currentActiveAlarm = useAlarmSoundStore(s => s.isAlarmRinging);
     const setAlarmActive = useAlarmSoundStore(s => s.setIsAlarmRinging)
-
-    const setIsAppInForeGround = useAppStateStore(s => s.setIsAppInForeGround);
 
     const nfcPromptVisible = useNfcStore(s => s.nfcPromptVisible);
     const setNfcPromptVisible = useNfcStore(s => s.setNfcPromptVisible);
     const lastStateChangeRef = useRef<number>(0);
     const stateChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Add function to check for recent alarm triggers
-    const checkRecentAlarmTrigger = async () => {
-        try {
-            const now = new Date();
-            const oneMinutesAgo = new Date(now.getTime() - 1 * 60 * 1000);
-            
-            // Get all scheduled notifications
-            const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
-            
-            // Check if any notification was scheduled in the last 2 minutes
-            const recentTrigger = scheduledNotifications.some(notification => {
-                if (!notification.trigger || !('date' in notification.trigger)) {
-                    return false;
-                }
-                const triggerDate = new Date(notification.trigger.date);
-                const isRecent = triggerDate >= oneMinutesAgo && triggerDate <= now;
-                
-                return isRecent;
-            });
+    const systemColorScheme = useColorScheme();
 
-            if (recentTrigger) {
-                // Cancel any existing notifications first
-                await Notifications.cancelAllScheduledNotificationsAsync();
-                await Notifications.dismissAllNotificationsAsync();
-                await playSoundEndlessly();
-                setNfcPromptVisible(true);
-            }
-        } catch (error) {
-            console.log('Error checking recent alarm triggers:', error);
-        }
-    };
+    const staticImage = systemColorScheme === "dark"
+            ? require('../assets/images/splashScreen-dark.png')
+            : require('../assets/images/splashScreen-light.png');
 
-    // Add function to check for active notifications
-    const checkActiveNotifications = async () => {
-        try {
-            const activeNotifications = await Notifications.getPresentedNotificationsAsync();
-            
-            if (activeNotifications.length > 0) {
-                await Notifications.cancelAllScheduledNotificationsAsync();
-                await Notifications.dismissAllNotificationsAsync();
-                await playSoundEndlessly();
-                setNfcPromptVisible(true);
-            }
-        } catch (error) {
-            console.log('Error checking active notifications:', error);
-        }
-    };
+    const splashVideo = isAppColorSchemeDark
+            ? require('../assets/videos/splashScreenAnimated-dark.mp4')
+            : require('../assets/videos/splashScreenAnimated-light.mp4');
+    
+    const backgroundColor = systemColorScheme === 'dark' ? '#000000' : '#ffffff';
 
     useEffect(() => {
-        const timer = setTimeout(() => setShowSplash(false), 2500);
+        if (currentActiveAlarm && !nfcPromptVisible) {
+          setNfcPromptVisible(true);
+        }
+    }, [currentActiveAlarm])
 
-        const prepare = async () => {
-            // Simulate async loading (e.g., fonts, data)
-            await new Promise(resolve => setTimeout(resolve, 2000));
-      
-            // Hide splash when ready
-            await SplashScreen.hideAsync();
-          };
-      
-          prepare();
-
+    useEffect(() => {
         // Skip if effect has already run
         if (effectRunRef.current) {
             return;
@@ -175,7 +138,6 @@ export default function Layout() {
         checkActiveNotifications();
 
         return () => {
-            clearTimeout(timer)
             if (notificationListener.current) {
                 Notifications.removeNotificationSubscription(notificationListener.current);
             }
@@ -191,10 +153,71 @@ export default function Layout() {
     }, []);
 
     useEffect(() => {
-        if (currentActiveAlarm && !nfcPromptVisible) {
-          setNfcPromptVisible(true);
+        async function prepareApp() {
+            try {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            } catch (e) {
+                console.warn(e);
+            } finally {
+                setSplashState('animating');
+            }
         }
-    }, [currentActiveAlarm])
+        prepareApp();
+    }, [setSplashState])
+
+    const onLayoutRootView = useCallback(async () => {
+        if (splashState === 'ready') {
+            await SplashScreen.hideAsync();
+        }
+    }, [splashState]);
+
+    // Add function to check for recent alarm triggers
+    const checkRecentAlarmTrigger = async () => {
+        try {
+            const now = new Date();
+            const oneMinutesAgo = new Date(now.getTime() - 1 * 60 * 1000);
+            
+            // Get all scheduled notifications
+            const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+            
+            // Check if any notification was scheduled in the last 2 minutes
+            const recentTrigger = scheduledNotifications.some(notification => {
+                if (!notification.trigger || !('date' in notification.trigger)) {
+                    return false;
+                }
+                const triggerDate = new Date(notification.trigger.date);
+                const isRecent = triggerDate >= oneMinutesAgo && triggerDate <= now;
+                
+                return isRecent;
+            });
+
+            if (recentTrigger) {
+                // Cancel any existing notifications first
+                await Notifications.cancelAllScheduledNotificationsAsync();
+                await Notifications.dismissAllNotificationsAsync();
+                await playSoundEndlessly();
+                setNfcPromptVisible(true);
+            }
+        } catch (error) {
+            console.log('Error checking recent alarm triggers:', error);
+        }
+    };
+
+    // Add function to check for active notifications
+    const checkActiveNotifications = async () => {
+        try {
+            const activeNotifications = await Notifications.getPresentedNotificationsAsync();
+            
+            if (activeNotifications.length > 0) {
+                await Notifications.cancelAllScheduledNotificationsAsync();
+                await Notifications.dismissAllNotificationsAsync();
+                await playSoundEndlessly();
+                setNfcPromptVisible(true);
+            }
+        } catch (error) {
+            console.log('Error checking active notifications:', error);
+        }
+    };
 
     async function requestForPushNotification() {
         if (Device.isDevice) {
@@ -277,75 +300,93 @@ export default function Layout() {
         }
     };
 
-    if (showSplash) {
-        return ( 
-            <View style={styles.container}>
-                <Video
-                    source={require('../assets/videos/splashScreenAnimated.mp4')}
-                    shouldPlay
-                    isLooping
-                    resizeMode={ResizeMode.COVER}
-                    style={[StyleSheet.absoluteFill, {left : -30}]} 
-                />
+     // 1. LOADING state
+     if (splashState === 'loading') {
+        return (
+            <View style={[styles.container, { backgroundColor }]}>
+                <Image source={staticImage} resizeMode="contain" />
             </View>
-        )
+        );
     }
 
+    // 2. ANIMATING state
+    if (splashState === 'animating') {
+        return (
+            <View style={[styles.container, { backgroundColor }]}>
+                <Video
+                    source={splashVideo}
+                    shouldPlay
+                    isLooping={false}
+                    resizeMode={ResizeMode.COVER}
+                    style={StyleSheet.absoluteFill}
+                    onPlaybackStatusUpdate={(status) => {
+                        if (status.isLoaded && status.didJustFinish) {
+                            setSplashState('ready');
+                        }
+                    }}
+                />
+            </View>
+        );
+    }
+
+    // 3. READY state
     return (
-        <Stack
-            screenOptions={{
-            headerShown: true,
-            gestureEnabled: true,
-            gestureDirection: 'horizontal',
-            animation: 'slide_from_left', // Default animation for forward navigation
-            presentation: 'card',
-            }}
-        >
-            <Stack.Screen
-            name="index"
-            options={() => ({
-                title: 'index',
-                headerShown: false,
-            })}
-            />
-            <Stack.Screen
-                name="settings"
-                options={({ route }) => ({
-                    title: 'Settings',
-                    headerShown: false,
-                    animation: 'slide_from_right', // This will make the screen slide from left when going back
-                    // For more control, we can use the custom animation options
-                    animationDuration: 1000,
-                })}
-            />
-            <Stack.Screen 
-                name="newAlarm"
-                options={({ route }) => ({
-                    title: 'New Alarm',
-                    headerShown: false,
-                    animation: 'simple_push',
-                    animationDuration: 500,
-                })}
-            />
-            <Stack.Screen 
-                name="editAlarm"
-                options={({ route }) => ({
-                    title: 'Edit Alarm',
-                    headerShown: false,
-                    animation: 'simple_push',
-                    animationDuration: 500,
-                })}
-            />
-            {/* <Stack.Screen 
-                name="testRun/testNFC"
-                options={({ route }) => ({
-                    title: 'Test NFC',
-                    headerShown: false,
-                    animation: 'simple_push',
-                    animationDuration: 500,
-                })}
-            /> */}
-        </Stack>
+        <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+            <Stack
+                screenOptions={{
+                    headerShown: true,
+                    gestureEnabled: true,
+                    gestureDirection: 'horizontal',
+                    animation: 'slide_from_left', // Default animation for forward navigation
+                    presentation: 'card',
+                }}
+            >
+                <Stack.Screen
+                    name="index"
+                    options={() => ({
+                        title: 'index',
+                        headerShown: false,
+                    })}
+                />
+                <Stack.Screen
+                    name="settings"
+                    options={({ route }) => ({
+                        title: 'Settings',
+                        headerShown: false,
+                        animation: 'slide_from_right', // This will make the screen slide from left when going back
+                        // For more control, we can use the custom animation options
+                        animationDuration: 1000,
+                    })}
+                />
+                <Stack.Screen 
+                    name="newAlarm"
+                    options={({ route }) => ({
+                        title: 'New Alarm',
+                        headerShown: false,
+                        animation: 'simple_push',
+                        animationDuration: 500,
+                    })}
+                />
+                <Stack.Screen 
+                    name="editAlarm"
+                    options={({ route }) => ({
+                        title: 'Edit Alarm',
+                        headerShown: false,
+                        animation: 'simple_push',
+                        animationDuration: 500,
+                    })}
+                />
+                {/* <Stack.Screen 
+                    name="testRun/testNFC"
+                    options={({ route }) => ({
+                        title: 'Test NFC',
+                        headerShown: false,
+                        animation: 'simple_push',
+                        animationDuration: 500,
+                    })}
+                /> */}
+            </Stack>
+        </View>
     );
 }
 

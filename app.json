@@ -5,15 +5,15 @@
     "version": "2",
     "orientation": "portrait",
     "icon": "./assets/images/appIcon.png",
+    "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/images/splashScreen.png",
       "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
     "scheme": "myapp",
-    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "userInterfaceStyle": "automatic",
       "bundleIdentifier": "com.briantan.testNFCA1",
       "infoPlist": {
         "NFCReaderUsageDescription": "This app uses NFC to scan tags for alarm dismissal",
