@@ -3,13 +3,12 @@ import { StyleSheet } from 'react-native';
 const globalStyles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: "#F3F3F3",
-        
+        backgroundColor: "#f5f4e9",
     },
     scrollView: {
         paddingVertical: 45,
         paddingHorizontal: 20,
-        backgroundColor: "#F3F3F3",
+        backgroundColor: "#f5f4e9",
     },
     subHeaderBar: {
         display: "flex",
@@ -27,3 +26,6 @@ const globalStyles = StyleSheet.create({
 });
 
 export default globalStyles;
+
+
+// #f6f5e9

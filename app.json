@@ -2,7 +2,7 @@
   "expo": {
     "name": "Chirp O'Clock",
     "slug": "chirp-oclock",
-    "version": "2",
+    "version": "3",
     "orientation": "portrait",
     "icon": "./assets/images/appIcon.png",
     "userInterfaceStyle": "automatic",

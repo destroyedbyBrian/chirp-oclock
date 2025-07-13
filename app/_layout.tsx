@@ -1,12 +1,12 @@
 import { Stack } from 'expo-router';
 import { AppState } from 'react-native';
-import { View, StyleSheet, useColorScheme, Image } from 'react-native';
+import { View, StyleSheet, useColorScheme, Image, Dimensions } from 'react-native';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { Audio, Video, ResizeMode } from 'expo-av';
-import { useAlarmSoundStore } from '../stores/soundStore';
+import { useAlarmSoundStore } from '@/stores/soundStore';
 import NfcManager from 'react-native-nfc-manager';
 import { useAppStateStore } from "@/stores/appStateStore";
 import { useNfcStore } from '@/stores/nfcStore';
@@ -39,6 +39,8 @@ export default function Layout() {
     const stateChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const systemColorScheme = useColorScheme();
+
+    const { width, height } = Dimensions.get('window');
 
     const staticImage = systemColorScheme === "dark"
             ? require('../assets/images/splashScreen-dark.png')
@@ -304,7 +306,7 @@ export default function Layout() {
      if (splashState === 'loading') {
         return (
             <View style={[styles.container, { backgroundColor }]}>
-                <Image source={staticImage} resizeMode="contain" />
+                <Image source={staticImage} resizeMode="contain" style={{ width: width * 1.9, height: height * 1.9 }} />
             </View>
         );
     }

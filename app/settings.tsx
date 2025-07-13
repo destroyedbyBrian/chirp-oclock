@@ -6,20 +6,17 @@ import {
     Pressable,
     TouchableOpacity,
     Modal,
+    Image
 } from "react-native";
 import { Card, Title, Paragraph } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
-import Entypo from "@expo/vector-icons/Entypo";
 import globalStyles from './styles/globalStyles';
 import { router } from "expo-router";
 import { useState } from "react";
 import { useAppColorScheme} from '@/stores/appColorScheme';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import Fontisto from "@expo/vector-icons/Fontisto";
-
 
 
 export default function SettingsScreen() {
@@ -52,6 +49,11 @@ export default function SettingsScreen() {
         setIsAppColorSchemeDark(toggleDarkModeButtonState);
     }
 
+    // 1. Turn off Do not Disturb & Silent Mode
+    // 2. Test nfc card in settings (not all cards with nfc will work)
+    // 3. Create alarm
+    // 4. Alarm trigger → Scan nfc card
+
     return (
         <SafeAreaView style={globalStyles.safeArea}>
             <ScrollView style={globalStyles.scrollView}>
@@ -66,82 +68,20 @@ export default function SettingsScreen() {
                     </Pressable>
                     <Text style={[globalStyles.subHeaderText, {fontSize: 30}]}>Settings</Text>
                 </View>
-                <View style={styles.wrapperCountainer}>
-                    <Text style={{ fontWeight: "bold", fontSize: 16 }}>
-                            Linked NFC Tags
-                    </Text>
-                    <Card style={styles.card}>
-                        <Card.Content style={styles.cardContent}>
-                            <View style={styles.row}>
-                                <View style={{ flex: 1, flexDirection: "row" }}>
-                                    <MaterialCommunityIcons
-                                        name="nfc"
-                                        size={24}
-                                        color="black"
-                                    />
-                                    <Title
-                                        style={{
-                                            fontSize: 18,
-                                            fontWeight: "bold",
-                                            marginTop: -3,
-                                            paddingLeft: 8,
-                                        }}
-                                    >
-                                        04-55-F5-72-5D-64-80
-                                    </Title>
-                                </View>
-                                <SimpleLineIcons
-                                    name="options-vertical"
-                                    size={17}
-                                    color="black"
-                                    style={{ marginTop: 2 }}
-                                />
-                            </View>
-                            <View style={styles.row}>
-                                <View style={{ flex: 1, flexDirection: "row" }}>
-                                    <MaterialCommunityIcons
-                                        name="nfc"
-                                        size={24}
-                                        color="black"
-                                    />
-                                    <Title
-                                        style={{
-                                            fontSize: 18,
-                                            fontWeight: "bold",
-                                            marginTop: -3,
-                                            paddingLeft: 8,
-                                        }}
-                                    >
-                                        02-W2-DF-22-F2-L0-78
-                                    </Title>
-                                </View>
-                                <SimpleLineIcons
-                                    name="options-vertical"
-                                    size={17}
-                                    color="black"
-                                    style={{ marginTop: 2 }}
-                                />
-                            </View>
-                        </Card.Content>
-                    </Card>
-                </View>
                 <View style={styles.cardOthers}>
-                    <Text style={{ fontWeight: "bold", fontSize: 16 }}>
-                            Others
-                    </Text>
                     <View>
                     <Card style={styles.card}>
                         <Card.Content style={styles.cardContent}>
                             <View style={styles.row2}>
                                 <View>
-                                    <Title
+                                    <Text
                                         style={{
                                             fontSize: 17,
                                             fontWeight: "bold",
                                         }}
                                     >
                                         Dark Mode
-                                    </Title>
+                                    </Text>
                                 </View>
                                 <Fontisto
                                     name={isAppColorSchemeDark ? "toggle-on": "toggle-off"}
@@ -155,12 +95,46 @@ export default function SettingsScreen() {
                     </Card>
                 </View>
                 </View>
-                <TouchableOpacity 
-                    style={styles.testNFCButton} 
-                    onPress={() => setNfcPromptVisible(true)}
-                >
-                    <Text style={{ color: 'white', fontSize: 17, fontWeight: '600' }}>Test NFC Feature</Text>
-                </TouchableOpacity>
+                {/* Improved How to Use Section */}
+                <View style={styles.howToUseContainer}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                        <Ionicons name="help-circle-outline" size={26} color="#007AFF" style={{ marginRight: 8 }} />
+                        <Text style={styles.howToUseTitle}>How to use</Text>
+                    </View>
+                    {/* Step 1 */}
+                    <View style={styles.stepRow}>
+                        <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>1</Text></View>
+                        <Text style={styles.stepText}>Turn off Do not Disturb & Silent Mode</Text>
+                        {/* <Image source={require('../assets/images/in-app/pointRight-light.png')} style={styles.stepImage} /> */}
+                    </View>
+                    {/* Step 2 */}
+                    <View style={styles.stepRow}>
+                        <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>2</Text></View>
+                        <Text style={styles.stepText}>Test NFC Card (not all cards with NFC chip will work)</Text>
+                        <Image source={require('../assets/images/in-app/pointLeft-light.png')} style={[styles.stepImage, { transform: [{ rotate: '3deg' }] }]} />
+                    </View>
+                    <View style={{flexDirection: "row"}}>
+                        <Image source={require('../assets/images/in-app/pointRight-light.png')} style={styles.stepImage} />
+                        <TouchableOpacity 
+                            style={styles.testNFCButton} 
+                            onPress={() => setNfcPromptVisible(true)}
+                        >
+                            <Text style={{ color: 'white', fontSize: 17, fontWeight: '600' }}>Test NFC Feature</Text>
+                        </TouchableOpacity>
+                    </View>
+                    {/* Step 3 */}
+                    <View style={styles.stepRow}>
+                        <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>3</Text></View>
+                        <Text style={styles.stepText}>Create an alarm</Text>
+                        <Image source={require('../assets/images/in-app/onTop-light.png')} style={[styles.stepImage, { transform: [{ rotate: '2deg' }] }]} />
+                    </View>
+                    {/* Step 4 */}
+                    <View style={styles.stepRow}>
+                        <View style={styles.stepBadge}><Text style={styles.stepBadgeText}>4</Text></View>
+                        <Text style={styles.stepText}>When alarm triggers, scan NFC card with device</Text>
+                        <Image source={require('../assets/images/in-app/leaning-light.png')} style={[styles.stepImage, { transform: [{ rotate: '-90deg' }] }]} />
+                    </View>
+                </View>
                 <Modal
                     animationType="slide"
                     transparent={true}
@@ -221,11 +195,12 @@ const styles = StyleSheet.create({
     },
     testNFCButton: {
         backgroundColor: 'black',
-        marginHorizontal: 16,
-        marginTop: 24,
         padding: 16,
-        borderRadius: 12,
-        alignItems: 'center'
+        borderRadius: 10,
+        alignItems: 'center',
+        alignSelf: 'center',
+        width: 200,
+        marginBottom: 8
     },
     modalContainer: {
         flex: 1,
@@ -234,7 +209,7 @@ const styles = StyleSheet.create({
         paddingBottom: 0,
       },
       modalContent: {
-        backgroundColor: "#fff",
+        backgroundColor: "#ffffff",
         borderTopLeftRadius: 22,
         borderTopRightRadius: 22,
         alignItems: "center",
@@ -292,6 +267,58 @@ const styles = StyleSheet.create({
         padding: 5,
         borderRadius: 12,
       },
+    howToUseContainer: {
+        backgroundColor: '#ffffff',
+        borderRadius: 18,
+        padding: 18,
+        margin: 14,
+        marginTop: 10,
+        marginBottom: 18,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.07,
+        shadowRadius: 10,
+        elevation: 1,
+    },
+    howToUseTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#222',
+        letterSpacing: 0.2,
+    },
+    stepRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 14,
+        marginTop: 2,
+    },
+    stepBadge: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: '#007AFF',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 10,
+    },
+    stepBadgeText: {
+        color: '#fff',
+        fontWeight: '700',
+        fontSize: 16,
+    },
+    stepImage: {
+        width: 70,
+        height: 76,
+        marginRight: 10,
+        resizeMode: 'contain',
+        opacity: 0.87
+    },
+    stepText: {
+        flex: 1,
+        fontSize: 16,
+        color: '#333',
+        fontWeight: '500',
+    },
 })
 
 

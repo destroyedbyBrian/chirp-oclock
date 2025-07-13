@@ -7,6 +7,7 @@ import {
     Pressable,
     TouchableOpacity,
     Modal,
+    Image,
 } from "react-native";
 import globalStyles from "./styles/globalStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -34,6 +35,7 @@ import { zustandStorage } from "../storage/mmkvStorage";
 import { STORAGE_KEYS } from '../storage/storageKeys';
 import { useNfcStore } from '../stores/nfcStore';
 import * as Haptics from 'expo-haptics';
+import { useAppColorScheme} from '@/stores/appColorScheme';
 
 
 // ---- ALARM OBJECT PROPERTIES
@@ -105,6 +107,12 @@ export default function HomeScreen() {
     const isAlarmActive = useAlarmSoundStore(s => s.isAlarmRinging);
     const nfcPromptVisible = useNfcStore(s => s.nfcPromptVisible);
     const setNfcPromptVisible = useNfcStore(s => s.setNfcPromptVisible);
+
+    const isAppColorSchemeDark = useAppColorScheme(s => s.isAppColorSchemeDark);
+
+    const noAlarmIllustration = isAppColorSchemeDark === true 
+        ? require('../assets/images/in-app/sleeping-dark.png')        
+        : require('../assets/images/in-app/sleeping-light.png');
     
     // ---- MEMOIZED, SORTED, DEDUPED, nextDue ALARMS ARRAY ---
     const { sortedAlarms } = useMemo(() => {
@@ -374,7 +382,7 @@ export default function HomeScreen() {
                 </View>
                 {alarms.length === 0 ? (
                     <View style={styles.emptyStateContainer}>
-                        <Ionicons name="alarm-outline" size={64} color="#888" style={styles.emptyStateIcon} />
+                        <Image source={noAlarmIllustration} style={styles.emptyStateIcon} />
                         <Text style={styles.emptyStateTitle}>No Alarms Yet</Text>
                         <Text style={styles.emptyStateSubtitle}>Tap the + button below to create your first alarm</Text>
                     </View>
@@ -705,8 +713,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     emptyStateIcon: {
-        marginBottom: 16,
-        opacity: 0.7,
+        width: 160,
+        height: 160,
+        opacity: 0.82,
+        alignSelf: 'center',
+        resizeMode: 'contain',
+        marginLeft: -16
     },
     emptyStateTitle: {
         fontSize: 24,
