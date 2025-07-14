@@ -2,6 +2,7 @@ import { Dimensions, View, Text, ScrollView, StyleSheet, NativeSyntheticEvent, N
 import moment from "moment-timezone";
 import { useState, useRef } from "react";
 import * as Haptics from 'expo-haptics';
+import { useAppColorScheme } from '@/stores/appColorScheme';
 
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
@@ -22,6 +23,8 @@ const HourPicker: React.FC<HourPickerProps> = ({ hour, onHourChange }) => {
     const scrollRef = useRef<ScrollView>(null);
     const [scrollPosition, setScrollPosition] = useState(0);
     const [hasInitialized, setHasInitialized] = useState(false);
+
+    const isAppColorSchemeDark = useAppColorScheme(s => s.isAppColorSchemeDark);
   
     // Wait for layout before setting initial position
     const handleLayout = () => {
@@ -88,10 +91,10 @@ const HourPicker: React.FC<HourPickerProps> = ({ hour, onHourChange }) => {
         >
           {infiniteNumbers.map((number, index) => {
             const distance = Math.abs(index - centerVisibleIndex);
-            let color = "#f0f0f1";
-            if (distance === 2) color = "#f0f0f1";
-            else if (distance === 1) color = "#c3c4c7";
-            else if (distance === 0) color = "#101517";
+            let color = isAppColorSchemeDark? "#676767":"#f0f0f1";
+            if (distance === 2) color = isAppColorSchemeDark? "#8f8f8f":"#f0f0f1";
+            else if (distance === 1) color = isAppColorSchemeDark? "#ababab":"#c3c4c7";
+            else if (distance === 0) color = isAppColorSchemeDark? "#FFFFFF":"#101517";
             return (
               <View key={index} style={styles.numberContainer}>
                 <Text style={[styles.number, { color }]}>{number}</Text>
@@ -115,6 +118,8 @@ const MinutePicker: React.FC<MinutePickerProps> = ({ minute, onMinuteChange }) =
     const scrollRef = useRef<ScrollView>(null);
     const [scrollPosition, setScrollPosition] = useState(0);
     const [hasInitialized, setHasInitialized] = useState(false);
+
+    const isAppColorSchemeDark = useAppColorScheme(s => s.isAppColorSchemeDark);
 
     // Wait until layout before setting initial position
     const handleLayout = () => {
@@ -178,10 +183,10 @@ const MinutePicker: React.FC<MinutePickerProps> = ({ minute, onMinuteChange }) =
         >
           {infiniteNumbers.map((number, index) => {
             const distance = Math.abs(index - centerVisibleIndex);
-            let color = "#f0f0f1";
-            if (distance === 2) color = "#f0f0f1";
-            else if (distance === 1) color = "#c3c4c7";
-            else if (distance === 0) color = "#101517";
+            let color = isAppColorSchemeDark? "#676767":"#f0f0f1";
+            if (distance === 2) color = isAppColorSchemeDark? "#8f8f8f":"#f0f0f1";
+            else if (distance === 1) color = isAppColorSchemeDark? "#ababab":"#c3c4c7";
+            else if (distance === 0) color = isAppColorSchemeDark? "#FFFFFF":"#101517";
             return (
               <View key={index} style={styles.numberContainer}>
                 <Text style={[styles.number, { color }]}>{number}</Text>

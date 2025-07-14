@@ -1,15 +1,19 @@
 import { StyleSheet } from 'react-native';
+import type { lightTheme as lightThemeType } from '@/theme/colors';
 
-const alarmSettingStyles = StyleSheet.create({
+const alarmSettingStyles  = (theme: typeof lightThemeType) =>  StyleSheet.create({
     cancelButton: {
-        marginTop: -8
+        marginTop: -8,
+        color: theme.text
     },
-    saveButton: {
+    doneButton: {
         fontSize: 20,
         fontWeight: "bold",
-        marginTop: -12
+        marginTop: -12,
+        color: theme.text
     },
-    subHeader2: {
+    ringingIn: {
+        color: theme.text,
         fontSize: 14,
         fontWeight: "bold",
         marginTop: -22,
@@ -19,12 +23,14 @@ const alarmSettingStyles = StyleSheet.create({
         marginTop: 30,
         width: 350,
         alignSelf: "center",
+        backgroundColor: theme.card
     },
     cardContainer2: {
         marginTop: 30,
         width: 350,
         display: "flex",
         flexDirection: "column",
+        backgroundColor: theme.card
     },
     cardContent1: {
         flexDirection: "row",
@@ -34,10 +40,23 @@ const alarmSettingStyles = StyleSheet.create({
     cardContent2: {
         paddingTop: -14,
     },
+    cardContentText: {
+        color: theme.text,
+        fontSize: 18,
+        fontWeight: "bold"
+    },
+    cardContentTextSecondary: {
+        fontSize: 13,
+        fontWeight: "bold",
+        marginTop: -7,
+        color: theme.subText
+    },
     semiCollen: {
         fontSize: 36,
         fontWeight: "700",
         alignSelf: "center",
+        marginTop: -6,
+        color: theme.text
     },
     row: {
         paddingTop: 14,
@@ -89,6 +108,19 @@ const alarmSettingStyles = StyleSheet.create({
         marginTop: 40,
         marginBottom: 4,
     },
+    deleteAlarmButtomn: {
+        backgroundColor: theme.button,
+        marginHorizontal: 16,
+        marginTop: 24,
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center'
+    },
+    deleteAlarmText: { 
+        color: theme.buttonText,
+        fontSize: 17, 
+        fontWeight: '600',
+    }
 })
 
 export default alarmSettingStyles;

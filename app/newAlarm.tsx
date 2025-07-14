@@ -9,8 +9,6 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from "react-native";
-import globalStyles from "./styles/globalStyles";
-import alarmSettingStyles from "./styles/alarmSettingStyles";
 import Feather from "@expo/vector-icons/Feather";
 import Entypo from "@expo/vector-icons/Entypo";
 import Fontisto from "@expo/vector-icons/Fontisto";
@@ -18,11 +16,16 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import { Card, Title, Paragraph } from "react-native-paper";
 import { HourPicker, MinutePicker } from "../components/timePicker";
 import AmPm from "../components/ampmPicker";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { router } from "expo-router";
 import { useAlarmStore } from '../stores/alarmsStore';
 import NfcManager, {NfcTech} from 'react-native-nfc-manager';
 import * as Haptics from 'expo-haptics';
+import { lightTheme, darkTheme } from '@/theme/colors';
+import { useAppColorScheme } from '@/stores/appColorScheme';
+import createGlobalStyles from "./styles/globalStyles";
+import alarmSettingStyles from "./styles/alarmSettingStyles";
+
 
 type Alarm = {
     hour: number;
@@ -30,7 +33,7 @@ type Alarm = {
     ampm: string;
 };
 
-export default function NewAlarmScreen() {
+export default function NewAlarmScreen()  {
     const [testNFCButton, setTestNFCButton] = useState<boolean>(false);
     const [successfulNFC, setSuccessfulNFC] = useState<boolean>(false);
     const [hour, setHour] = useState<number>(7);
@@ -41,6 +44,12 @@ export default function NewAlarmScreen() {
     const [showDescriptionModal, setShowDescriptionModal] = useState<boolean>(false);
 
     const [ringingIn, setRingingIn] = useState<string>('');
+
+    const isAppColorSchemeDark = useAppColorScheme(s => s.isAppColorSchemeDark);
+    const theme = isAppColorSchemeDark ? darkTheme : lightTheme;
+    const globalStylesObj = useMemo(() => createGlobalStyles(theme), [theme]);
+    const styles = useMemo(() => alarmSettingStyles(theme), [theme]);
+
 
     function get24Hour(hour: number, ampm: string) {
         ampm = ampm.toLowerCase();
@@ -132,47 +141,43 @@ export default function NewAlarmScreen() {
     }, [testNFCButton]);
 
     return (
-        <SafeAreaView style={globalStyles.safeArea}>
-            <View style={globalStyles.scrollView}>
-                <View style={[globalStyles.subHeaderBar, {flexDirection: "row", alignItems: "center"}]}>
+        <SafeAreaView style={globalStylesObj.safeArea}>
+            <View style={globalStylesObj.scrollView}>
+                <View style={[globalStylesObj.subHeaderBar, {flexDirection: "row", alignItems: "center"}]}>
                     <Feather 
                         name="x"
                         size={24}
-                        color="black"
-                        style={alarmSettingStyles.cancelButton}
+                        color={isAppColorSchemeDark? "white": "black"}
                         onPress={() => router.push('/')}
+                        style={{marginTop: -6}}
                     />
-                    <Text style={[globalStyles.subHeaderText, {fontSize: 24, marginLeft: 24}]}>New Alarm</Text>
+                    <Text style={[globalStylesObj.subHeaderText, {fontSize: 24, marginLeft: 24}]}>New Alarm</Text>
                     <Pressable>
                         <Text 
-                            style={alarmSettingStyles.saveButton}
+                            style={styles.doneButton}
                             onPress={handleDone}
                         >Done</Text>
                     </Pressable>
                 </View>
-                <Text style={alarmSettingStyles.subHeader2}>{ringingIn}</Text>
-                <Card style={alarmSettingStyles.cardContainer1}>
-                    <Card.Content style={alarmSettingStyles.cardContent1}>
+                <Text style={styles.ringingIn}>{ringingIn}</Text>
+                <Card style={styles.cardContainer1}>
+                    <Card.Content style={styles.cardContent1}>
                         <HourPicker hour={hour} onHourChange={setHour} />
-                        <Text style={alarmSettingStyles.semiCollen}>:</Text>
+                        <Text style={styles.semiCollen}>:</Text>
                         <MinutePicker minute={minute} onMinuteChange={setMinute} />
                         <AmPm ampm={ampm} onAmpmChange={setAmpm} />
                     </Card.Content>
                 </Card>
-                <Card style={alarmSettingStyles.cardContainer2}>
-                    <Card.Content style={alarmSettingStyles.cardContent2}>
-                        <TouchableOpacity onPress={() => setTestNFCButton(true)}>
-                            <View style={alarmSettingStyles.row}>
+                <Card style={styles.cardContainer2}>
+                    <Card.Content style={styles.cardContent2}>
+                        <TouchableOpacity onPress={() => {
+                            setTestNFCButton(true)
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        }}>
+                            <View style={styles.row}>
                                 <View>
-                                    <Title style={{ fontSize: 18, fontWeight: "bold" }}>NFC Link</Title>
-                                    <Paragraph
-                                        style={{
-                                            fontSize: 13,
-                                            fontWeight: "bold",
-                                            color: "grey",
-                                            marginTop: -7,
-                                        }}
-                                    >
+                                    <Title style={styles.cardContentText}>NFC Link</Title>
+                                    <Paragraph style={styles.cardContentTextSecondary}>
                                         {testNFCButton 
                                             ? 'Scanning...'
                                             : successfulNFC
@@ -184,43 +189,39 @@ export default function NewAlarmScreen() {
                                 <AntDesign
                                     name="disconnect"
                                     size={24}
-                                    color="black"
-                                    style={{ marginTop: 5, paddingRight: 6 }}
+                                    color={isAppColorSchemeDark? "white" : "black"}
+                                    style={{ marginTop: 10, paddingRight: 6, fontSize: 26 }}
                                 />
                             </View>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setVibrate(!vibrate)}>
-                            <View style={alarmSettingStyles.row}>
+                        <TouchableOpacity onPress={() => {
+                            setVibrate(!vibrate)
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        }}>
+                            <View style={styles.row}>
                                 <View>
-                                    <Title style={{ fontSize: 18, fontWeight: "bold" }}>Vibrate</Title>
+                                    <Title style={styles.cardContentText}>Vibrate</Title>
                                 </View>
                                 <Fontisto
                                     name={vibrate ? "toggle-on" : "toggle-off"}
                                     size={40}
-                                    color="black"
+                                    color={vibrate? (isAppColorSchemeDark? "white":"black"): "grey"}
                                     style={{ marginTop: -2 }}
                                 />
                             </View>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => setShowDescriptionModal(true)}>
-                            <View style={alarmSettingStyles.row}>
+                            <View style={styles.row}>
                                 <View>
-                                    <Title style={{ fontSize: 18, fontWeight: "bold" }}>Description</Title>
-                                    <Paragraph
-                                        style={{
-                                            fontSize: 13,
-                                            fontWeight: "bold",
-                                            color: "grey",
-                                            marginTop: -7,
-                                        }}
-                                    >
+                                    <Title style={styles.cardContentText}>Description</Title>
+                                    <Paragraph style={styles.cardContentTextSecondary}>
                                         {description || 'No description'}
                                     </Paragraph>
                                 </View>
                                 <Entypo
                                     name="chevron-right"
                                     size={28}
-                                    color="black"
+                                    color={isAppColorSchemeDark? "white" : "black"}
                                     style={{
                                         alignSelf: "center",
                                         marginTop: -7,

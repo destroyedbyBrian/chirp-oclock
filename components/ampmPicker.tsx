@@ -2,9 +2,10 @@ import React, { useRef, useState, useEffect } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import moment from "moment-timezone";
 import * as Haptics from 'expo-haptics';
+import { useAppColorScheme } from '@/stores/appColorScheme';
 
 
-const AMPM_ITEM_HEIGHT = 80;  // Smaller than hour/minute
+const AMPM_ITEM_HEIGHT = 80;
 const AMPM_VISIBLE_ITEMS = 2;
 
 type AmPmProps = {
@@ -13,11 +14,14 @@ type AmPmProps = {
 };
 
 const AmPm: React.FC<AmPmProps> = ({ ampm, onAmpmChange }) => {
+
     const scrollRef = useRef<ScrollView>(null);
     const [scrollPosition, setScrollPosition] = useState<number>(0);
     const [previousAmPm, setPreviousAmPm] = useState<string>("");
     const choices = ["am", "pm"];
     const infiniteChoices = [...choices, ...choices, ...choices];
+
+    const isAppColorSchemeDark = useAppColorScheme(s => s.isAppColorSchemeDark);
 
     useEffect(() => {
         const now = new Date();
@@ -94,9 +98,9 @@ const AmPm: React.FC<AmPmProps> = ({ ampm, onAmpmChange }) => {
             >
                 {infiniteChoices.map((choice, index) => {
                     const distance = Math.abs(index - centerVisibleIndex);
-                    let color = "#f0f0f1";
+                    let color = isAppColorSchemeDark? "#101517":"#f0f0f1";
                     if (distance === 1) color = "#c3c4c7";
-                    else if (distance === 0) color = "#101517";
+                    else if (distance === 0) color = isAppColorSchemeDark? "#FFFFFF":"#101517";
                     return (
                         <View key={index} style={styles.numberContainer}>
                             <Text style={[styles.number, { color }]}>{choice}</Text>

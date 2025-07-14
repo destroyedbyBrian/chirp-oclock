@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { STORAGE_KEYS } from '../storage/storageKeys';
 import { create } from 'zustand';
 
+
 type AppColorSchemeStore = {
     isAppColorSchemeDark: boolean,
     setIsAppColorSchemeDark: (value: boolean) => void;

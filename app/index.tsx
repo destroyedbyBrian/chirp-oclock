@@ -3,13 +3,11 @@ import {
     ScrollView,
     View,
     Text,
-    StyleSheet,
     Pressable,
     TouchableOpacity,
     Modal,
     Image,
 } from "react-native";
-import globalStyles from "./styles/globalStyles";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Fontisto from "@expo/vector-icons/Fontisto";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -35,7 +33,10 @@ import { zustandStorage } from "../storage/mmkvStorage";
 import { STORAGE_KEYS } from '../storage/storageKeys';
 import { useNfcStore } from '../stores/nfcStore';
 import * as Haptics from 'expo-haptics';
-import { useAppColorScheme} from '@/stores/appColorScheme';
+import { lightTheme, darkTheme } from '@/theme/colors';
+import { useAppColorScheme } from '@/stores/appColorScheme';
+import createGlobalStyles from "./styles/globalStyles";
+import indexStyles from "./styles/indexStyles";
 
 
 // ---- ALARM OBJECT PROPERTIES
@@ -54,13 +55,11 @@ type AlarmWithNextDue = Alarm & {
 };
 
 function alarmCorePropsEqual(a: Alarm, b: Alarm) {
-    // Add every "user controlled" property, but *not* notificationIdArray
     return (
         a.id === b.id &&
         a.hour === b.hour &&
         a.minute === b.minute &&
         a.ampm === b.ampm
-        // label, repeat, etc if you have them
     );
 }
 
@@ -98,7 +97,6 @@ export default function HomeScreen() {
     const [newAlarmButtonPressed, setNewAlarmButtonPressed] = useState<boolean>(false);
     const [successfulNFC, setSuccessfulNFC] = useState<boolean>(false);
     
-
     /* ---- GET GLOBAL STATE for :
         - (alarmStore) all alarms
         - (soundStore) all properties 
@@ -108,10 +106,15 @@ export default function HomeScreen() {
     const nfcPromptVisible = useNfcStore(s => s.nfcPromptVisible);
     const setNfcPromptVisible = useNfcStore(s => s.setNfcPromptVisible);
 
+    // ---- THEME AND STYLES ---- //
     const isAppColorSchemeDark = useAppColorScheme(s => s.isAppColorSchemeDark);
+    const theme = isAppColorSchemeDark ? darkTheme : lightTheme;
+    // Memoize styles to prevent recreation on every render
+    const globalStylesObj = useMemo(() => createGlobalStyles(theme), [theme]);
+    const styles = useMemo(() => indexStyles(theme), [theme]);
 
     const noAlarmIllustration = isAppColorSchemeDark === true 
-        ? require('../assets/images/in-app/sleeping-dark.png')        
+        ? require('../assets/images/in-app/sleeping-dark.png')
         : require('../assets/images/in-app/sleeping-light.png');
     
     // ---- MEMOIZED, SORTED, DEDUPED, nextDue ALARMS ARRAY ---
@@ -367,15 +370,15 @@ export default function HomeScreen() {
     }, [sortedAlarms]);
 
     return (
-        <SafeAreaView style={globalStyles.safeArea}>
-            <ScrollView style={globalStyles.scrollView}>
-                <View style={globalStyles.subHeaderBar}>
-                    <Text style={globalStyles.subHeaderText}>Alarm</Text>
+        <SafeAreaView style={globalStylesObj.safeArea}>
+            <ScrollView style={globalStylesObj.scrollView}>
+                <View style={globalStylesObj.subHeaderBar}>
+                    <Text style={globalStylesObj.subHeaderText}>Alarm</Text>
                     <Pressable onPress={() => router.push("/settings")}>
                         <Ionicons
-                            name="menu-outline"
+                            name="menu"
                             size={32}
-                            color="black"
+                            color= {isAppColorSchemeDark ? "white" : "black"}
                             marginTop={-4}
                         />
                     </Pressable>
@@ -388,7 +391,7 @@ export default function HomeScreen() {
                     </View>
                 ) : (
                     sortedAlarms.map((alarm) => (
-                        <CardComponent alarm={alarm} key={alarm.id}/>
+                        <CardComponent alarm={alarm} key={alarm.id} theme={theme} styles={styles}/>
                     ))
                 )}
             </ScrollView>
@@ -405,7 +408,9 @@ export default function HomeScreen() {
                             Hold your phone near the tag to dismiss alarm
                         </Text>
                         {sortedAlarms.length > 0 && (
-                            <Text style={styles.alarmTime}>
+                            <Text 
+                                style={{fontSize: 40, fontWeight: 700, letterSpacing: 1}}
+                            >
                                 {`${sortedAlarms[0].hour.toString().padStart(2, "0")}:${sortedAlarms[0].minute.toString().padStart(2, "0")} ${sortedAlarms[0].ampm}`}
                             </Text>
                         )}
@@ -430,13 +435,16 @@ export default function HomeScreen() {
             <Pressable
                 onPressIn={() => setNewAlarmButtonPressed(true)}
                 onPressOut={() => setNewAlarmButtonPressed(false)}
-                onPress={() => router.push("/newAlarm")}
+                onPress={() => {
+                    router.push("/newAlarm")
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft);
+                }}
                 style={[
                     styles.addAlarmButton,
                     newAlarmButtonPressed && styles.buttonPressed,
                 ]}
             >
-                <Ionicons name="add-circle" size={70} color="black" />
+                <Ionicons name="add-circle" size={70} color={isAppColorSchemeDark? "white" : "black"} />
             </Pressable>
         </SafeAreaView>
     );
@@ -444,8 +452,10 @@ export default function HomeScreen() {
 
 const RENDER_POSITION = 0;
 
-function CardComponent({ alarm }: { 
+function CardComponent({ alarm, theme, styles }: { 
     alarm: AlarmWithNextDue, 
+    theme: typeof lightTheme,
+    styles: any
 }) {
     const triggerDeleteIcon = useSharedValue(false);
     const position = useSharedValue(RENDER_POSITION);
@@ -455,6 +465,7 @@ function CardComponent({ alarm }: {
     const [deletePromptVisible, setDeletePromptVisible] = useState<boolean>(false);
     const [deleteIconType, setDeleteIconType] = useState<'toggle' | 'delete' | 'delete-empty'>('toggle');
     const toggleAlarm = useAlarmStore((s) => s.toggleAlarm);
+    const isAppColorSchemeDark = useAppColorScheme(s => s.isAppColorSchemeDark);
 
     const handleDeletedAlarmData = async (id: string) => {
         // Get the alarm being deleted to access its notification IDs
@@ -533,7 +544,7 @@ function CardComponent({ alarm }: {
                             })
                         }
                     >
-                        <Card>
+                        <Card style={{ backgroundColor: theme.card}}>
                             <Card.Content style={styles.cardContent}>
                                 <View>
                                     <Title style={styles.time}>
@@ -543,10 +554,10 @@ function CardComponent({ alarm }: {
                                             .toString()
                                             .padStart(2, "0")} ${alarm.ampm}`}
                                     </Title>
-                                    <Paragraph style={[styles.caption, { color: "black" }]}>
+                                    <Paragraph style={styles.caption}>
                                         {alarm.description}
                                     </Paragraph>
-                                    <Paragraph style={[styles.caption, { color: "black", opacity: 0.3 }]}>
+                                    <Paragraph style={styles.caption}>
                                         Next: {alarm.nextDue.toLocaleString()}
                                     </Paragraph>
                                 </View>
@@ -554,16 +565,16 @@ function CardComponent({ alarm }: {
                                     {deletePromptVisible ? 
                                         <View>
                                         {deleteIconType === 'delete' && (
-                                            <MaterialCommunityIcons name="delete" size={50} color="black" />
+                                            <MaterialCommunityIcons name="delete" size={50} color={isAppColorSchemeDark? "white" : "black"} />
                                         )}
                                         {deleteIconType === 'delete-empty' && (
-                                            <MaterialCommunityIcons name="delete-empty" size={50} color="black" />
+                                            <MaterialCommunityIcons name="delete-empty" size={50} color={isAppColorSchemeDark? "white" : "black"} />
                                         )}
                                         {deleteIconType === 'toggle' && (
                                             <Fontisto
                                             name={alarm.enabled ? "toggle-on": "toggle-off"}
                                             size={50}
-                                            color= {alarm.enabled ? "black" : "grey"}
+                                            color={alarm.enabled ? (isAppColorSchemeDark ? "white" : "black") : "grey"}
                                             marginRight={-10}
                                             onPress={() => toggleOnOff(alarm.id)}
                                             />
@@ -572,7 +583,7 @@ function CardComponent({ alarm }: {
                                     <Fontisto
                                         name={alarm.enabled ? "toggle-on": "toggle-off"}
                                         size={50}
-                                        color= {alarm.enabled ? "black" : "grey"}
+                                        color={alarm.enabled ? (isAppColorSchemeDark ? "white" : "black") : "grey"}
                                         marginRight={-10}
                                         onPress={() => toggleOnOff(alarm.id)}
                                     />
@@ -586,151 +597,3 @@ function CardComponent({ alarm }: {
         </GestureHandlerRootView>
     );
 }
-
-const styles = StyleSheet.create({
-    card: {
-        backgroundColor: "#ffffff",
-        elevation: 1,
-        borderRadius: 12,
-        marginBottom: 16
-    },
-    cardContent: {
-        display: "flex",
-        flexDirection: "row",
-        justifyContent: "space-between",
-    },
-    day: {
-        fontWeight: "200",
-        fontSize: 12,
-        marginTop: -6,
-    },
-    time: {
-        fontWeight: "700",
-        fontSize: 30,
-        marginBottom: -1,
-        letterSpacing: 0.8,
-        color: 'black'
-    },
-    caption: {
-        fontWeight: "500",
-        fontSize: 14,
-        marginBottom: -2,
-        letterSpacing: 1.2
-    },
-    addAlarmButton: {
-        position: "absolute",
-        bottom: 50, // Adjust this value as needed for spacing from the bottom
-        alignSelf: "center", // Center horizontally
-        zIndex: 10, // Ensure it's on top of other elements
-        transform: [{ scale: 1 }],
-    },
-    buttonPressed: {
-        transform: [{ scale: 0.9 }],
-    },
-    modalContainer: {
-        flex: 1,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        justifyContent: "flex-end",
-        paddingBottom: 0,
-    },
-    modalContent: {
-        backgroundColor: "#fff",
-        borderTopLeftRadius: 22,
-        borderTopRightRadius: 22,
-        alignItems: "center",
-        padding: 30,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: -3 },
-        shadowOpacity: 0.25,
-        shadowRadius: 12,
-        elevation: 15,
-    },
-    modalTitle: {
-        fontWeight: '700',
-        fontSize: 24,
-        marginBottom: 8,
-        color: "#222",
-        letterSpacing: 0.3,
-    },
-    modalSubtitle: {
-        fontSize: 16,
-        color: "#666",
-        marginBottom: 20,
-        textAlign: "center",
-        lineHeight: 22,
-    },
-    alarmTime: {
-        fontSize: 32,
-        color: "#007AFF",
-        fontWeight: "700",
-        marginBottom: 24,
-        marginTop: 8,
-    },
-    scanButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: "#007AFF",
-        borderRadius: 22,
-        paddingHorizontal: 28,
-        paddingVertical: 14,
-        marginBottom: 16,
-        marginTop: 8,
-        shadowColor: "#007AFF",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    scanButtonPressed: {
-        transform: [{ scale: 0.98 }],
-        opacity: 0.9,
-    },
-    scanButtonLabel: {
-        color: "#fff",
-        fontSize: 18,
-        fontWeight: "600",
-        letterSpacing: 0.3,
-    },
-    delete: {
-        backgroundColor: 'red',
-        overflow: 'hidden',
-        position: 'absolute',
-        right: 0
-    },
-    notificationIds: {
-        marginTop: 8,
-    },
-    notificationId: {
-        fontSize: 12,
-        color: '#666',
-        marginBottom: 2,
-    },
-    emptyStateContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingTop: 100,
-        paddingHorizontal: 20,
-    },
-    emptyStateIcon: {
-        width: 160,
-        height: 160,
-        opacity: 0.82,
-        alignSelf: 'center',
-        resizeMode: 'contain',
-        marginLeft: -16
-    },
-    emptyStateTitle: {
-        fontSize: 24,
-        fontWeight: '600',
-        color: '#222',
-        marginBottom: 8,
-        textAlign: 'center',
-    },
-    emptyStateSubtitle: {
-        fontSize: 16,
-        color: '#666',
-        textAlign: 'center',
-        lineHeight: 22,
-    },
-})
